@@ -34,9 +34,13 @@
   - Lives in the Drive of `df.ai.lab.hq@gmail.com`
 - Time: **due date + estimate (mins)**
 - Folders: **flat categories**
-- Hosting: **Cloudflare** (app + MCP)
+- Hosting: **app on GitHub Pages** (same as WMM Lite). MCP host = open question (Pages can't run servers)
 - Google accounts: **df.ai.lab.hq** for testing, **darrenfawcett1980** for real use
-- Login: **shared login service** (reused by other apps) – email + username + 6-digit PIN + fingerprint
+- Login: **copy WMM Lite's lock** (`docs/lock.js` + `docs/lockui.js` on branch `claude/elegant-davinci-h39d2r`
+  of DF-AI-Lab/wheres-my-money-lite): passcode + backup codes + fingerprint passkey, in the browser.
+  Make it shared so other apps reuse it. Google is NOT the login, only data storage.
+- Claude deletes: crossed out, I confirm/undo; auto-deleted after **7 days** if ignored
+- Claude connects once with PIN/fingerprint, then stays connected
 - Claude (MCP): add / read / edit / tick off. **Delete = soft delete** (crossed out, I confirm or undo in the app)
 - Offline: **yes**, basic offline + sync later
 - Review later: **flag on a note** + a Review screen
@@ -45,3 +49,9 @@
 
 ## Next step
 Finish the grill-me questions, then lock the plan.
+
+## Reference: WMM Lite (the pattern to copy)
+- Repo: DF-AI-Lab/wheres-my-money-lite, live branch `claude/elegant-davinci-h39d2r`, site in `docs/`
+- Live: https://df-ai-lab.github.io/wheres-my-money-lite/
+- Has: lock.js/lockui.js (lock), sw.js (offline), sheet.js, DRIVE_SETUP.md (Drive `drive.file` scope)
+- NOT PythonAnywhere (that is the old financial-tracker app)
