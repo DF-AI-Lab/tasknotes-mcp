@@ -12,3 +12,8 @@
 - Search box across tasks and notes
 - Sub-tasks / checklists inside a task
 - Scrambled backup file to Drive (like WMM Lite) as well as the Sheet
+
+## 🔐 Secrets (from v0.2.0)
+- Move secrets to a new phone: a scrambled backup file (lock.js already has seal/adopt for this).
+- Folders inside Secrets if the list gets long.
+- Clear the clipboard 30 seconds after Copy.

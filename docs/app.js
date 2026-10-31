@@ -2,7 +2,7 @@
 (function () {
   'use strict';
   const S = window.Store, $ = id => document.getElementById(id);
-  const VERSION = '0.1.0';
+  const VERSION = '0.2.0';
   const DEMO = new URLSearchParams(location.search).has('demo');
   const SKEY = DEMO ? 'tn_demo_state_v1' : 'tn_state_v1';
   const store = DEMO ? sessionStorage : localStorage;
@@ -12,6 +12,7 @@
 
   // ---------- state ----------
   let st = load();
+  if (!st.secrets) st.secrets = [];
   function load() {
     try { const t = store.getItem(SKEY); const s = t && JSON.parse(t); if (s && s.v === 1) return s; } catch (e) { /* none yet */ }
     return DEMO ? S.demo(today()) : S.starter();
@@ -45,10 +46,11 @@
     const planned = todays.reduce((a, t) => a + (Number(t.estimate_mins) || 0), 0);
     const dayMins = Number(st.settings.dayMins) || 360;
     const revN = st.notes.filter(n => live(n) && n.review_later).length;
-    const titles = {day: 'Your day', notes: 'Notes', review: 'Review later', done: 'Done'};
+    const titles = {day: 'Your day', notes: 'Notes', review: 'Review later', done: 'Done', secrets: '🔐 Secrets'};
     const subs = {
       day: now.toLocaleDateString('en-GB', {weekday: 'short', day: 'numeric', month: 'short'}) + ' · ' + (planned ? S.fmtMins(planned) + ' planned of ~' + S.fmtMins(dayMins) : todays.length ? todays.length + ' to do' : 'nothing due today'),
-      notes: 'Quick thoughts by category', review: 'Notes you flagged to look at again', done: 'Hidden from your day, but kept'};
+      notes: 'Quick thoughts by category', review: 'Notes you flagged to look at again', done: 'Hidden from your day, but kept',
+      secrets: vault.key ? 'Open · locks after 1 min without a tap' : 'Locked · needs your PIN every time'};
     let h = `<div class="top"><div><h2>${titles[tab]}</h2><small>${esc(subs[tab])}</small></div>
       <div class="topr">${DEMO ? '' : syncButton()}<button class="av" id="me" aria-label="Settings">${esc(initials())}</button></div></div>`;
 
@@ -96,7 +98,10 @@
       h += `<h3 class="sec"><span>${ds.length} done</span></h3>`;
       h += ds.length ? ds.map(item).join('') : '<div class="empty">Nothing ticked off yet</div>';
     }
+    if (tab === 'secrets') h += vaultHtml();
     $('scroll').innerHTML = h;
+    if (tab === 'secrets' && !vault.key) vaultPad();
+    $('qa').hidden = tab === 'secrets';
     const badge = $('revn'); badge.hidden = !revN; badge.textContent = revN;
     document.querySelectorAll('#nav button').forEach(b => b.classList.toggle('on', b.dataset.tab === tab));
     $('kind').textContent = kind;
@@ -153,12 +158,21 @@
     if (d.edit) { const [k, id] = d.edit.split(':'); editSheet(k, id); return; }
     if (d.undel) { const [k, id] = d.undel.split(':'); S.undelete(st, k, id); save(); render(); toast('Kept 👍'); return; }
     if (d.okdel) { const [k, id] = d.okdel.split(':'); S.confirmDelete(st, k, id); save(); render(); toast('🗑️ Deleted', () => { S.undelete(st, k, id); save(); render(); }); return; }
+    if (d.vadd) { secretSheet(null); return; }
+    if (d.vedit) { secretSheet(d.vedit); return; }
+    if (d.vlock) { lockVault(); toast('🔒 Secrets locked'); return; }
+    if (d.vcopy) {
+      const it = vault.items.find(x => x.id === d.vcopy);
+      if (it) copyText(it.text).then(ok => toast(ok ? '📋 Copied: ' + it.title.slice(0, 24) : '😕 Could not copy'));
+      return;
+    }
     if (b.id === 'me') { settingsSheet(); return; }
     if (b.id === 'syncb') { if (Sync.ready()) syncNow(true); else syncSheet(); }
   });
   $('nav').addEventListener('click', e => {
     const b = e.target.closest('button[data-tab]');
     if (!b) return;
+    if (tab === 'secrets' && b.dataset.tab !== 'secrets') lockVault(true);
     tab = b.dataset.tab;
     if (tab === 'review' || tab === 'done') filter = null;
     if (tab === 'notes' || tab === 'review') kind = 'Note'; else if (tab === 'day') kind = 'Task';
@@ -297,7 +311,7 @@
       });
       sh.querySelector('#mpin').addEventListener('click', () => { closeSheet(); window.LockUI.changePin(); });
       sh.querySelector('#mcodes').addEventListener('click', () => confirmSheet('🔑 Make 10 new backup codes?', 'The old ones stop working.', 'Make new codes', () => window.LockUI.newCodes()));
-      sh.querySelector('#mlock').addEventListener('click', () => { closeSheet(); window.LockUI.lockNow(); });
+      sh.querySelector('#mlock').addEventListener('click', () => { closeSheet(); lockVault(true); window.LockUI.lockNow(); });
     });
   }
   function confirmSheet(title, text, yes, fn, bad) {
@@ -367,7 +381,7 @@
           if (bad) { msg('😕 ' + bad); return; }
           Sync.setConfig(cfg);
           // first link: everything on this phone goes up once
-          ['tasks', 'notes', 'cats'].forEach(k => st[k].forEach(r => { st.dirty[k + ':' + (k === 'cats' ? r.name : r.id)] = r.updated || new Date().toISOString(); }));
+          S.KINDS.forEach(k => (st[k] || []).forEach(r => { st.dirty[k + ':' + (k === 'cats' ? r.name : r.id)] = r.updated || new Date().toISOString(); }));
           save(true);
           msg('✅ Connected. Syncing…');
           await syncNow(true);
@@ -376,6 +390,128 @@
       });
       const off = sh.querySelector('#yoff');
       if (off) off.addEventListener('click', () => { Sync.setConfig({url: '', key: ''}); closeSheet(); render(); toast('☁️ Cloud sync off. Your data stays on this phone.'); });
+    });
+  }
+
+  // ---------- 🔐 secrets ----------
+  // Locked by default. The PIN opens it (every time); the key and the readable list live only in memory.
+  // It locks again after 1 minute without a tap, when you leave the tab, or when the app goes to the background.
+  const vault = {key: null, items: [], at: 0, busy: false};
+  const liveSecrets = () => st.secrets.filter(live);
+  function lockVault(quiet) {
+    if (!vault.key && !vault.items.length) return;
+    vault.key = null; vault.items = [];
+    if (!$('sheetwrap').hidden && $('sheet').querySelector('#xt')) closeSheet();
+    if (!quiet && tab === 'secrets' && !$('app').hidden) render();
+  }
+  async function refreshVault(quiet) {
+    if (!vault.key) return;
+    const key = vault.key;
+    const items = await Promise.all(liveSecrets().map(async r => {
+      const o = await Vault.open(key, r.data);
+      return Object.assign({id: r.id, created: r.created, bad: !o}, o || {title: "🔒 Can't open on this phone", text: ''});
+    }));
+    if (vault.key !== key) return;
+    vault.items = items.sort((a, z) => a.title.localeCompare(z.title, 'en-GB', {sensitivity: 'base'}));
+    if (tab === 'secrets' && (!quiet || $('sheetwrap').hidden)) render();
+  }
+  function vaultHtml() {
+    const n = liveSecrets().length;
+    if (!vault.key) {
+      return `<div class="vault"><div class="vicon">🔐</div><b>${n} secret${n === 1 ? '' : 's'} locked away</b>
+        <small id="vmsg">${DEMO ? 'Demo PIN: ' + Vault.DEMO_PIN : 'Type your PIN to open'}</small><div id="vpad" class="vpad"></div></div>`;
+    }
+    let h = `<div class="vbar"><button class="btn p" data-vadd="1" type="button">＋ New secret</button><button class="btn" data-vlock="1" type="button">🔒 Lock</button></div>`;
+    h += `<h3 class="sec"><span>${vault.items.length} secret${vault.items.length === 1 ? '' : 's'}</span></h3>`;
+    h += vault.items.length ? vault.items.map(it => `<div class="sec-card${it.bad ? ' bad' : ''}">
+        <div class="sh"><b>${esc(it.title)}</b>${it.bad ? '' : `<button class="mini" data-vcopy="${esc(it.id)}" type="button">📋 Copy</button>`}<button class="mini" data-vedit="${esc(it.id)}" type="button">${it.bad ? '🗑️' : '✏️'}</button></div>
+        ${it.text ? `<div class="stx">${esc(it.text)}</div>` : ''}</div>`).join('')
+      : '<div class="empty">Nothing here yet. Tap ＋ New secret 👆</div>';
+    h += '<p class="small vfoot">Scrambled with your PIN before it leaves the phone. The Sheet and Claude only see gibberish.</p>';
+    return h;
+  }
+  function vaultPad() {
+    const box = $('vpad');
+    if (!box) return;
+    let pin = '';
+    const dots = document.createElement('div'); dots.className = 'dots';
+    for (let i = 0; i < 6; i++) dots.appendChild(document.createElement('i'));
+    const draw = () => [...dots.children].forEach((d, i) => d.classList.toggle('on', i < pin.length));
+    const grid = document.createElement('div'); grid.className = 'pad';
+    const msg = t => { const m = $('vmsg'); if (m) { m.textContent = t; m.classList.add('err'); } };
+    const press = async k => {
+      if (vault.busy) return;
+      if (k === 'del') { pin = pin.slice(0, -1); draw(); return; }
+      if (pin.length >= 6) return;
+      pin += k; draw();
+      if (pin.length < 6) return;
+      vault.busy = true;
+      try {
+        const r = DEMO ? (pin === Vault.DEMO_PIN ? {key: await Vault.demoKey()} : {err: 'Wrong PIN. The demo PIN is ' + Vault.DEMO_PIN + '.'})
+                       : await window.LockUI.vault(pin);
+        if (r.key) { vault.key = r.key; vault.at = Date.now(); await refreshVault(); return; }
+        pin = ''; draw(); dots.classList.remove('shake'); void dots.offsetWidth; dots.classList.add('shake'); msg(r.err);
+      } finally { vault.busy = false; }
+    };
+    ['1', '2', '3', '4', '5', '6', '7', '8', '9', '', '0', 'del'].forEach(k => {
+      const b = document.createElement('button');
+      b.type = 'button'; b.textContent = k === 'del' ? '⌫' : k; b.setAttribute('aria-label', k === 'del' ? 'Delete' : k || 'blank');
+      if (!k) b.disabled = true;
+      if (k === 'del') b.classList.add('ic');
+      b.addEventListener('click', () => press(k));
+      grid.appendChild(b);
+    });
+    box.append(dots, grid);
+    vault.press = press;
+  }
+  document.addEventListener('keydown', e => {
+    if (tab !== 'secrets' || vault.key || !$('vpad') || !$('sheetwrap').hidden || e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) return;
+    if (/^[0-9]$/.test(e.key)) vault.press(e.key); else if (e.key === 'Backspace') vault.press('del');
+  });
+  ['pointerdown', 'keydown', 'input'].forEach(ev => document.addEventListener(ev, () => { if (vault.key) vault.at = Date.now(); }, true));
+  setInterval(() => { if (vault.key && Date.now() - vault.at > Vault.IDLE_MS) lockVault(); }, 5000);
+  document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'hidden') lockVault(); });
+
+  async function copyText(text) {
+    try { await navigator.clipboard.writeText(text); return true; } catch (e) {
+      const t = document.createElement('textarea'); t.value = text; document.body.appendChild(t); t.select();
+      let ok = false; try { ok = document.execCommand('copy'); } catch (x) { /* no */ } t.remove(); return ok;
+    }
+  }
+  function secretSheet(id) {
+    if (!vault.key) return;
+    const it = id ? vault.items.find(x => x.id === id) : {title: '', text: ''};
+    if (!it) return;
+    if (it.bad) {
+      confirmSheet('Delete this secret?', 'It was made on another phone, so this phone cannot open it.', 'Delete', () => {
+        S.remove(st, 'secrets', id, 'you'); save(); refreshVault(); }, true);
+      return;
+    }
+    openSheet(`<h2>${id ? '✏️ Edit secret' : '🔐 New secret'}</h2>
+      <div class="field"><label for="xt">Name</label><input class="inp" id="xt" maxlength="60" value="${esc(it.title)}" placeholder="e.g. Bike lock code" autofocus autocomplete="off"></div>
+      <div class="field"><label for="xx">Secret</label><textarea class="inp" id="xx" placeholder="The thing you want hidden" autocomplete="off" autocapitalize="off" spellcheck="false">${esc(it.text)}</textarea></div>
+      <p class="small" id="xerr" hidden></p>
+      <div class="btns">${id ? '<button class="btn" id="xdel" type="button">🗑️ Delete</button>' : ''}<button class="btn p" id="xsave" type="button">Save</button></div>`, sh => {
+      sh.querySelector('#xsave').addEventListener('click', async () => {
+        const title = sh.querySelector('#xt').value.trim(), text = sh.querySelector('#xx').value;
+        if (!title) { sh.querySelector('#xt').focus(); return; }
+        if (!vault.key) { closeSheet(); return; }
+        const data = await Vault.seal(vault.key, {title, text});
+        if (id) S.edit(st, 'secrets', id, {data}); else S.addSecret(st, data);
+        save(); closeSheet(); await refreshVault(); toast('🔐 Saved and scrambled');
+      });
+      const d = sh.querySelector('#xdel');
+      if (d) d.addEventListener('click', () => {
+        S.remove(st, 'secrets', id, 'you'); save(); closeSheet(); refreshVault();
+        toast('🗑️ Deleted: ' + it.title.slice(0, 24), () => { S.undelete(st, 'secrets', id); save(); refreshVault(); });
+      });
+    });
+  }
+  // demo: two made-up secrets, scrambled with the demo key
+  if (DEMO && !st.secrets.length) {
+    Vault.demoKey().then(async k => {
+      for (const o of [{title: 'Bike lock', text: '4 7 1 9'}, {title: 'Wi-Fi at mum\'s', text: 'Network: Fawcett-Home\nPassword: blue-kettle-42'}]) S.addSecret(st, await Vault.seal(k, o));
+      st.dirty = {}; save(true); if (tab === 'secrets') render();
     });
   }
 
@@ -390,6 +526,7 @@
       syncErr = '';
       S.purge(st, Date.now());
       save(true);
+      if (vault.key) await refreshVault(true);
       if (loud) toast('🔄 Synced' + (r.sent ? ' · sent ' + r.sent : ''));
     } catch (e) {
       syncErr = e.message || 'Sync failed';

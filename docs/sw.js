@@ -1,8 +1,8 @@
 /* TaskNotes - the service worker: keeps the app files on the phone so it opens with no internet.
    Bump VERSION with every app version. */
-const VERSION = '0.1.0';
+const VERSION = '0.2.0';
 const CACHE = 'tasknotes-' + VERSION;
-const FILES = ['./', 'index.html', 'app.css', 'app.js', 'store.js', 'lock.js', 'lockui.js', 'sync.js', 'manifest.json', 'icon-192.png', 'icon-512.png', 'icon-maskable-512.png'];
+const FILES = ['./', 'index.html', 'app.css', 'app.js', 'store.js', 'lock.js', 'vault.js', 'lockui.js', 'sync.js', 'manifest.json', 'icon-192.png', 'icon-512.png', 'icon-maskable-512.png'];
 
 self.addEventListener('install', e => {
   e.waitUntil((async () => {

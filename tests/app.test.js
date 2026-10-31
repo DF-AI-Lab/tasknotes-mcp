@@ -96,3 +96,36 @@ test('shared lock: PIN, backup codes, wrong tries', async () => {
   for (let i = 0; i < 5; i++) Lock.fail(rec, 1000);
   assert.ok(Lock.lockedUntil(rec, 2000) > 0);
 });
+
+test('🔐 secrets: scrambled, only the right key opens them, and they sync like other rows', async () => {
+  const V = require('../docs/vault.js');
+  const key = await V.keyFrom(crypto.getRandomValues(new Uint8Array(32)));
+  const other = await V.keyFrom(crypto.getRandomValues(new Uint8Array(32)));
+  const data = await V.seal(key, {title: 'Bike lock', text: '4719'});
+  assert.match(data, /^v1\./);
+  assert.ok(!data.includes('Bike') && !data.includes('4719'));
+  assert.deepEqual(await V.open(key, data), {title: 'Bike lock', text: '4719'});
+  assert.equal(await V.open(other, data), null);
+  assert.equal(await V.open(key, 'rubbish'), null);
+
+  const s = S.starter(); s.dirty = {};
+  const r = S.addSecret(s, data);
+  assert.equal(S.outbox(s).secrets.length, 1);
+  // an older Worker that does not send secrets back must not wipe them
+  S.merge(s, S.outbox(s), {tasks: [], notes: [], cats: s.cats});
+  assert.equal(s.secrets.length, 1);
+  // a new Worker echoes it back: now it is synced
+  S.merge(s, S.outbox(s), {tasks: [], notes: [], cats: s.cats, secrets: [Object.assign({}, r)]});
+  assert.equal(S.outboxCount(s), 0);
+  // an old saved state with no secrets list still works
+  const old = S.starter(); delete old.secrets;
+  assert.equal(S.outbox(old).secrets.length, 0);
+});
+
+test('🔐 the secrets key comes from the lock, so the same lock gives the same key', async () => {
+  const V = require('../docs/vault.js');
+  const rec = await Lock.create('482915', Lock.makeCodes());
+  const mb = () => Uint8Array.from(atob(rec.mb), c => c.charCodeAt(0));
+  const data = await V.seal(await V.keyFrom(mb()), {title: 'PIN for the shed', text: '1066'});
+  assert.equal((await V.open(await V.keyFrom(mb()), data)).text, '1066');
+});

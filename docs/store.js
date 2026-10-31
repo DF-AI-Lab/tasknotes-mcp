@@ -7,6 +7,7 @@
 (function (root) {
   'use strict';
   const DAY = 86400000, PURGE_DAYS = 7;
+  const KINDS = ['tasks', 'notes', 'cats', 'secrets'];
   const COLOURS = ['#e0663a', '#2f6fdf', '#7a5af8', '#0f9d76', '#d6409f', '#c99a06', '#0ea5b7', '#64748b'];
 
   const nowIso = () => new Date().toISOString();
@@ -16,7 +17,7 @@
   const addDays = (d, n) => { const x = new Date(d); x.setDate(x.getDate() + n); return x; };
 
   function empty() {
-    return {v: 1, tasks: [], notes: [], cats: [], dirty: {}, lastSync: '', settings: {name: '', theme: 'ocean', dayMins: 360}};
+    return {v: 1, tasks: [], notes: [], cats: [], secrets: [], dirty: {}, lastSync: '', settings: {name: '', theme: 'ocean', dayMins: 360}};
   }
   function starter() {
     const s = empty();
@@ -97,7 +98,7 @@
     s.notes.unshift(row);
     return touch(s, 'notes', row);
   }
-  const find = (s, kind, id) => s[kind].find(r => r.id === id);
+  const find = (s, kind, id) => (s[kind] || []).find(r => r.id === id);
   function edit(s, kind, id, f) {
     const row = find(s, kind, id);
     if (!row) return null;
@@ -129,6 +130,13 @@
     if (!row) return null;
     row.deleted_at = ''; row.deleted_by = '';
     return touch(s, kind, row);
+  }
+  // 🔐 a secret: `data` is already scrambled by the app (title + text), so the Sheet and Claude only see gibberish
+  function addSecret(s, data) {
+    s.secrets = s.secrets || [];
+    const row = {id: rid('s'), data: String(data || ''), created: nowIso(), updated: '', deleted_at: '', deleted_by: ''};
+    s.secrets.unshift(row);
+    return touch(s, 'secrets', row);
   }
   const confirmDelete = (s, kind, id) => { const r = find(s, kind, id); if (!r) return null; r.deleted_by = 'you'; return touch(s, kind, r); };
 
@@ -171,14 +179,14 @@
   function purge(s, nowMs) {
     const old = r => r.deleted_at && (nowMs - Date.parse(r.deleted_at)) > PURGE_DAYS * DAY;
     let n = 0;
-    ['tasks', 'notes', 'cats'].forEach(k => { const before = s[k].length; s[k] = s[k].filter(r => !old(r)); n += before - s[k].length; });
+    KINDS.forEach(k => { if (!s[k]) s[k] = []; const before = s[k].length; s[k] = s[k].filter(r => !old(r)); n += before - s[k].length; });
     return n;
   }
 
   // ---------- sync ----------
   // what to send: every dirty row, as it is now
   function outbox(s) {
-    const out = {tasks: [], notes: [], cats: []};
+    const out = {tasks: [], notes: [], cats: [], secrets: []};
     Object.keys(s.dirty).forEach(k => {
       const i = k.indexOf(':'), kind = k.slice(0, i), id = k.slice(i + 1);
       const row = kind === 'cats' ? s.cats.find(c => c.name === id) : find(s, kind, id);
@@ -189,9 +197,11 @@
   const outboxCount = s => Object.keys(s.dirty).length;
   // the Worker answers with the whole Sheet; rows changed here while the sync was running are kept
   function merge(s, sent, snap) {
-    ['tasks', 'notes', 'cats'].forEach(kind => {
+    const known = KINDS.filter(k => Array.isArray(snap[k]));      // an older Worker may not send secrets yet: leave those alone
+    KINDS.forEach(k => { if (!s[k]) s[k] = []; });
+    known.forEach(kind => {
       const mine = new Map(s[kind].map(r => [key(kind, r), r]));
-      const next = (snap[kind] || []).map(r => {
+      const next = snap[kind].map(r => {
         const k = key(kind, r), local = mine.get(k), d = s.dirty[kind + ':' + k];
         return local && d && d > (r.updated || '') ? local : r;
       });
@@ -200,7 +210,7 @@
       s[kind] = next;
     });
     // anything sent and not changed since is safe now
-    ['tasks', 'notes', 'cats'].forEach(kind => (sent[kind] || []).forEach(r => {
+    known.forEach(kind => (sent[kind] || []).forEach(r => {
       const k = kind + ':' + key(kind, r);
       if (s.dirty[k] === r.updated) delete s.dirty[k];
     }));
@@ -231,7 +241,7 @@
 
   const Store = {DAY, PURGE_DAYS, COLOURS, BUCKETS, empty, starter, demo, ymd, addDays, bucket, dueLabel, fmtMins, parseQuick,
     live, pendingDelete, shown, cats, cat, catOrFirst, addTask, addNote, edit, tick, flag, remove, undelete, confirmDelete,
-    addCat, editCat, removeCat, purge, outbox, outboxCount, merge, find};
+    addCat, editCat, removeCat, addSecret, KINDS, purge, outbox, outboxCount, merge, find};
   if (typeof module !== 'undefined' && module.exports) module.exports = Store;
   else root.Store = Store;
 })(typeof window !== 'undefined' ? window : globalThis);

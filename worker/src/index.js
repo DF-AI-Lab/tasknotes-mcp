@@ -7,7 +7,7 @@ import {readAll, writeAll} from './google.js';
 import * as oauth from './oauth.js';
 import {same} from './oauth.js';
 
-export const VERSION = '0.1.0';
+export const VERSION = '0.2.0';
 const PROTOCOLS = ['2025-11-25', '2025-06-18', '2025-03-26', '2024-11-05'];
 
 const cors = (req, env) => {

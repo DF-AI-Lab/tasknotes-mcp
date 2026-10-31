@@ -243,6 +243,18 @@
     fingerOff() { rec = load(); if (rec) { rec.passkeys = []; save(); } },
     async newCodes() { rec = load(); if (!rec) return; const codes = L.makeCodes(); await L.newCodes(rec, codes); save(); show(); stepCodes(codes, false); },
     codesLeft() { rec = load(); return rec ? L.codesLeft(rec) : 0; },
+    // 🔐 Secrets: the PIN every time (no fingerprint). Wrong tries count with the main lock. Returns {key} or {err}
+    async vault(pin) {
+      rec = load();
+      if (!rec) return {err: 'Set up your PIN first.'};
+      if (L.lockedUntil(rec, Date.now())) return {err: tooMany()};
+      if (!await L.checkPin(rec, pin)) {
+        L.fail(rec, Date.now()); save();
+        return {err: L.lockedUntil(rec, Date.now()) ? tooMany() : 'Wrong PIN. ' + (L.MAX_TRIES - rec.fails.count) + ' tries left.'};
+      }
+      L.ok(rec); save();
+      return {key: await root.Vault.keyFrom(Uint8Array.from(atob(rec.mb), c => c.charCodeAt(0)))};
+    },
     async changePin() { rec = load(); if (!rec) return; show(); stepNewPin('', true); }
   };
   root.LockUI = api;

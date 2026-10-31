@@ -93,3 +93,10 @@ Darren follows SETUP.md (Pages → Google robot → Cloudflare → connect phone
 - Live: https://df-ai-lab.github.io/wheres-my-money-lite/
 - Has: lock.js/lockui.js (lock), sw.js (offline), sheet.js, DRIVE_SETUP.md (Drive `drive.file` scope)
 - NOT PythonAnywhere (that is the old financial-tracker app)
+
+## v0.2.0 · 🔐 Secrets (2026-10-31)
+- New **Secrets** tab. Needs the PIN every time (no fingerprint). Locks after 1 min idle, on leaving the tab, or when the app goes to the background.
+- Each secret = a name + hidden text, shown once open, with 📋 Copy.
+- Scrambled on the phone (AES-GCM, key from the lock key) before syncing. The Sheet gets a **Secrets** tab of gibberish. No Claude tool reads it.
+- Limit: only this phone's key opens them. A new phone needs the backup-file idea (see IDEAS.md).
+- Redeploy the Worker so it syncs the Secrets tab (an old Worker just leaves secrets on the phone).

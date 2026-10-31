@@ -2,7 +2,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import worker, {handle} from '../src/index.js';
-import {runTool, parseDue, fromValues, toValues, applyChanges} from '../src/data.js';
+import {runTool, parseDue, fromValues, toValues, applyChanges, TOOLS} from '../src/data.js';
 import {_test as g} from '../src/google.js';
 
 // ---------- a fake Google ----------
@@ -67,6 +67,19 @@ test('phone: wrong key is refused, sync merges and writes', async () => {
   // an older copy does not win
   applyChanges(snap, {tasks: [Object.assign({}, row, {title: 'old', updated: '2020-01-01'})]});
   assert.equal(snap.tasks.find(t => t.id === 't_phone').title, 'From phone');
+
+  // 🔐 a scrambled secret goes to its own Secrets tab and comes back as it was
+  const sec = {id: 's_1', data: 'v1.aaa.bbb', created: '2026-10-31T10:00:00Z', updated: '2026-10-31T10:00:00Z', deleted_at: '', deleted_by: ''};
+  const r2 = await (await call('/api/sync', {method: 'POST', headers: {Authorization: 'Bearer app-key-123', 'Content-Type': 'application/json'}, body: JSON.stringify({changes: {secrets: [sec]}})})).json();
+  assert.deepEqual(r2.secrets, [sec]);
+  assert.deepEqual(sheet.Secrets[1].slice(0, 2), ['s_1', 'v1.aaa.bbb']);
+});
+
+test('🔐 no Claude tool can see secrets', () => {
+  const snap = {tasks: [], notes: [], cats: [], secrets: [{id: 's_x', data: 'v1.zz.yy', created: '', updated: '', deleted_at: '', deleted_by: ''}]};
+  assert.ok(!TOOLS.some(t => /secret/i.test(t.name + t.description)));
+  assert.throws(() => runTool(snap, 'delete_item', {id: 's_x'}), /Nothing has the id/);
+  assert.ok(!runTool(snap, 'day_summary', {}).text.includes('v1.'));
 });
 
 test('Claude: PIN login, then the tools', async () => {

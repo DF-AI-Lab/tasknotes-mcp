@@ -5,8 +5,9 @@ export const COLS = {
   tasks: ['id', 'title', 'category', 'due', 'estimate_mins', 'done', 'done_at', 'created', 'updated', 'deleted_at', 'deleted_by'],
   notes: ['id', 'text', 'category', 'review_later', 'reviewed', 'created', 'updated', 'deleted_at', 'deleted_by'],
   cats: ['name', 'colour', 'emoji', 'updated', 'deleted_at'],
+  secrets: ['id', 'data', 'created', 'updated', 'deleted_at', 'deleted_by'],   // 🔐 scrambled on the phone; no Claude tool reads this
 };
-export const TABS = {tasks: 'Tasks', notes: 'Notes', cats: 'Categories'};
+export const TABS = {tasks: 'Tasks', notes: 'Notes', cats: 'Categories', secrets: 'Secrets'};
 const BOOLS = new Set(['done', 'review_later', 'reviewed']);
 const NUMS = new Set(['estimate_mins']);
 const COLOURS = ['#e0663a', '#2f6fdf', '#7a5af8', '#0f9d76', '#d6409f', '#c99a06', '#0ea5b7', '#64748b'];
@@ -63,8 +64,8 @@ export function clean(kind, r) {                      // a row from the phone, t
 // ---------- sync: newest `updated` wins ----------
 export function applyChanges(snap, changes) {
   let changed = false;
-  for (const kind of ['tasks', 'notes', 'cats']) {
-    const list = snap[kind], at = new Map(list.map((r, i) => [keyOf(kind, r), i]));
+  for (const kind of Object.keys(COLS)) {
+    const list = snap[kind] || (snap[kind] = []), at = new Map(list.map((r, i) => [keyOf(kind, r), i]));
     for (const raw of (changes && changes[kind]) || []) {
       const r = clean(kind, raw), k = keyOf(kind, r);
       if (!k) continue;
@@ -78,7 +79,8 @@ export function applyChanges(snap, changes) {
 }
 export function purge(snap, nowMs) {
   let n = 0;
-  for (const kind of ['tasks', 'notes', 'cats']) {
+  for (const kind of Object.keys(COLS)) {
+    if (!snap[kind]) snap[kind] = [];
     const before = snap[kind].length;
     snap[kind] = snap[kind].filter(r => !(r.deleted_at && nowMs - Date.parse(r.deleted_at) > PURGE_DAYS * DAY));
     n += before - snap[kind].length;
