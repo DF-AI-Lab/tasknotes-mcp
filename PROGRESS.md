@@ -22,6 +22,7 @@
 - [x] Grill rounds 4-5 done
 - [x] Grill round 6 done
 - [x] Grill round 7 done
+- [x] Look picked (see Design below)
 - [ ] Darren signs off the summary
 - [ ] Tech stack decided
 - [ ] Data model decided
@@ -57,6 +58,14 @@
 - Name: **TaskNotes**
 - Testing: **`?demo=1`** fake-data mode, never touches real data
 - Build order: 1) phone app + lock (offline) 2) Worker + Sheet sync 3) MCP for Claude
+
+## Design (picked 31 Oct)
+- Mockup: `design/mockup.html` (live: https://claude.ai/artifact/VBWSfKBnMyqZdttPmxaJti)
+- Colour: **Ocean** (blue dark). Ember and Mint kept in the mockup as spares.
+- Opening: PIN pad (6 dots, keypad, fingerprint key), "Hi Darren".
+- Main: "Your day" header + day bar (minutes per category vs ~6h), category tiles (tap to filter),
+  Today / Tomorrow / Later list with time + category pill, sticky note cards (tap = review flag),
+  quick-add box (Task/Note toggle), bottom nav Day / Notes / Review / Done, undo toast.
 
 ## Next step
 Darren OKs the summary, then build step 1 (phone app + lock, offline).
