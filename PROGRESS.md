@@ -16,7 +16,9 @@
 ## Status
 - [x] Repo created
 - [x] PROGRESS.md + IDEAS.md added
-- [ ] Design grilling session (in progress)
+- [x] Grill round 1 + 2 done
+- [x] Mock Sheet created
+- [ ] Grill round 3+
 - [ ] Tech stack decided
 - [ ] Data model decided
 - [ ] MCP server built
@@ -24,7 +26,18 @@
 - [ ] Mobile app built
 
 ## Decisions made
-_(filled in as we go)_
+- Mobile: **PWA** (web app added to home screen), **Android**
+- Claude: **online MCP** so it works on phone + claude.ai
+- Storage: **Google Sheet** – mock: [TaskNotes Data (mock)](https://docs.google.com/spreadsheets/d/1CmMYDzu4nEv-Es1Q0HVY7Q63nvk_rwwDNPVdhr9AJUQ/edit)
+  - Tabs: Tasks / Notes / Categories
+  - Lives in the Drive of `df.ai.lab.hq@gmail.com`
+- Time: **due date + estimate (mins)**
+- Folders: **flat categories**
+- Hosting: **Cloudflare** (app + MCP)
+- Login: **Google sign-in** (shared login, other apps will use it too)
+- Review later: **flag on a note** + a Review screen
+- Reminders: **later** (in IDEAS.md)
+- Done tasks: **hidden, kept**
 
 ## Next step
 Finish the grill-me questions, then lock the plan.
