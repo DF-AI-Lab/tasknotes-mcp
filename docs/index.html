@@ -1,0 +1,59 @@
+<!doctype html>
+<html lang="en-GB" class="lockon">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>TaskNotes</title>
+<meta name="theme-color" content="#0f1622">
+<meta name="description" content="Tasks and notes with categories. Works offline. Claude can help through MCP.">
+<link rel="manifest" href="manifest.json">
+<link rel="icon" href="icon-192.png">
+<link rel="apple-touch-icon" href="icon-192.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500&display=swap">
+<link rel="stylesheet" href="app.css">
+</head>
+<body>
+
+<!-- 🔒 the lock (lockui.js draws each step in here) -->
+<section id="lock" class="lock" aria-live="polite">
+  <div class="lockin">
+    <div class="logo" aria-hidden="true">TN</div>
+    <h1 id="lockhi">TaskNotes</h1>
+    <p id="lockmsg" class="lockmsg">Loading…</p>
+    <div id="lockbody" class="lockbody"></div>
+  </div>
+</section>
+
+<!-- 📋 the app -->
+<main id="app" class="app" hidden>
+  <div id="demobar" class="demobar" hidden>🧪 Demo mode: fake data, nothing is saved. <a href="./">Leave demo</a></div>
+  <div id="scroll" class="scroll"></div>
+  <form id="qa" class="quick" autocomplete="off">
+    <button type="button" class="kind" id="kind" aria-label="Switch between task and note">Task</button>
+    <input id="qtext" enterkeyhint="done" placeholder="Quick add…" aria-label="Quick add">
+    <button class="add" aria-label="Add">＋</button>
+  </form>
+  <nav class="nav" id="nav">
+    <button data-tab="day" class="on"><span>☀️</span>Day</button>
+    <button data-tab="notes"><span>🗒️</span>Notes</button>
+    <button data-tab="review"><span>🔖</span>Review<b class="badge" id="revn" hidden></b></button>
+    <button data-tab="done"><span>✅</span>Done</button>
+  </nav>
+</main>
+
+<!-- bottom sheet for edit / settings / confirm -->
+<div id="sheetwrap" class="sheetwrap" hidden>
+  <div class="backdrop" id="backdrop"></div>
+  <div class="sheet" id="sheet" role="dialog" aria-modal="true"></div>
+</div>
+
+<div class="toast" id="toast" role="status"><span id="tmsg"></span><button id="undo" type="button">Undo</button></div>
+
+<script src="store.js"></script>
+<script src="lock.js"></script>
+<script src="sync.js"></script>
+<script src="lockui.js"></script>
+<script src="app.js"></script>
+</body>
+</html>

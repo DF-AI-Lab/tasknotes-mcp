@@ -14,21 +14,39 @@
 - Code lives on **GitHub**: `DF-AI-Lab/tasknotes-mcp`
 
 ## Status
-- [x] Repo created
-- [x] PROGRESS.md + IDEAS.md added
-- [x] Grill round 1 + 2 done
-- [x] Mock Sheet created
-- [x] Grill round 3 done
-- [x] Grill rounds 4-5 done
-- [x] Grill round 6 done
-- [x] Grill round 7 done
-- [x] Look picked (see Design below)
-- [ ] Darren signs off the summary
-- [ ] Tech stack decided
-- [ ] Data model decided
-- [ ] MCP server built
-- [ ] Google Drive sync built
-- [ ] Mobile app built
+- [x] Grill done, plan signed off, look picked (Ocean)
+- [x] **Step 1: phone app + lock (offline)**, in `docs/`
+- [x] **Step 2: Worker + Sheet sync**, code in `worker/` (not deployed yet)
+- [x] **Step 3: MCP for Claude**, on the same Worker (not deployed yet)
+- [x] Tests: 14 passing (`node --test tests/*.test.js worker/test/*.test.js`), GitHub Actions runs them
+- [ ] Darren: turn on GitHub Pages (SETUP.md step 1)
+- [ ] Darren: Google robot + Cloudflare + secrets (SETUP.md steps 2-4)
+- [ ] Connect phone + Claude (SETUP.md steps 5-6)
+- [ ] Test on the real phone, then switch to the darrenfawcett1980 Sheet
+
+## What's built (v0.1.0)
+**App (`docs/`)**
+- Lock: name → 6-digit PIN twice → 10 backup codes → offer fingerprint. PIN pad, 5 wrong = 15 min lock,
+  re-locks after 5 min idle, "Forgot PIN?" with a backup code. Shared module, any DF app can use it
+  (`LockUI.start({app, prefix, ...})`).
+- Day screen: day bar (planned mins vs free time), category tiles (tap = filter), Overdue / Today / Tomorrow /
+  This week / Later / No date, latest notes.
+- Quick add understands `Call mum 20m tomorrow #home`. Task/Note switch.
+- Tap a task = edit sheet (title, category, due chips + date, minutes chips). Tap circle = tick + Undo.
+- Notes: cards, 🔖 Later / ✓ Reviewed button, edit sheet. Review tab with badge. Done tab.
+- "🤖 Claude wants to delete" box: Keep / Delete. Auto-gone after 7 days.
+- Settings: name, colour (Ocean / Ember / Mint), free hours per day, categories (add, rename, icon, colour,
+  delete → items move), cloud sync, fingerprint on/off, change PIN, new backup codes, lock now,
+  download a copy (JSON), demo.
+- Offline: service worker (`sw.js`, bump VERSION each release). `?demo=1` uses fake data in sessionStorage only.
+
+**Worker (`worker/`)**
+- `/api/ping`, `/api/sync` (Bearer APP_KEY): phone sends changed rows, newest `updated` wins, gets the whole Sheet back.
+- Sheet columns are added automatically (reads the old mock format too, UK dates OK).
+- `/mcp`: MCP (Streamable HTTP, JSON). Login = OAuth with PKCE where Darren types `MCP_PIN` once.
+  Stateless signed tokens (TOKEN_SECRET). Optional KV `LOCKS` for PIN lockout.
+- Tools: day_summary, list_tasks, add_task, edit_task, complete_task, list_notes, list_review_notes,
+  add_note, edit_note, list_categories, add_category, delete_item (soft).
 
 ## Decisions made
 - Mobile: **PWA** (web app added to home screen), **Android**
@@ -68,7 +86,7 @@
   quick-add box (Task/Note toggle), bottom nav Day / Notes / Review / Done, undo toast.
 
 ## Next step
-Darren OKs the summary, then build step 1 (phone app + lock, offline).
+Darren follows SETUP.md (Pages → Google robot → Cloudflare → connect phone and Claude), then tests on the phone.
 
 ## Reference: WMM Lite (the pattern to copy)
 - Repo: DF-AI-Lab/wheres-my-money-lite, live branch `claude/elegant-davinci-h39d2r`, site in `docs/`

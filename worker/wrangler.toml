@@ -1,0 +1,23 @@
+# TaskNotes Worker (free Cloudflare plan is plenty). See ../WORKER_SETUP.md
+name = "tasknotes"
+main = "src/index.js"
+compatibility_date = "2025-06-01"
+
+[vars]
+# the Google Sheet id (the long part of its address). Test sheet: TaskNotes Data (mock)
+SHEET_ID = "1CmMYDzu4nEv-Es1Q0HVY7Q63nvk_rwwDNPVdhr9AJUQ"
+TZ = "Europe/London"
+APP_ORIGIN = "https://df-ai-lab.github.io"
+
+# Secrets (set with `npx wrangler secret put NAME`, never in this file):
+#   GOOGLE_SERVICE_ACCOUNT  the robot's JSON key file, pasted whole
+#   APP_KEY                 long random text; the phone app uses it to sync
+#   MCP_PIN                 the PIN you type once when connecting Claude
+#   TOKEN_SECRET            long random text; signs Claude's login (change it to sign Claude out)
+
+# Optional: blocks guessing the Claude PIN (5 wrong = 15 minutes). Create with
+#   npx wrangler kv namespace create LOCKS
+# then uncomment and paste the id:
+# [[kv_namespaces]]
+# binding = "LOCKS"
+# id = "paste-id-here"

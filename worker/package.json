@@ -1,0 +1,10 @@
+{
+  "name": "tasknotes-worker",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "test": "node --test test/*.test.js",
+    "dev": "npx wrangler@3 dev",
+    "deploy": "npx wrangler@3 deploy"
+  }
+}
