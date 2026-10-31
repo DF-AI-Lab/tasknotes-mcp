@@ -18,7 +18,8 @@
 - [x] PROGRESS.md + IDEAS.md added
 - [x] Grill round 1 + 2 done
 - [x] Mock Sheet created
-- [ ] Grill round 3+
+- [x] Grill round 3 done
+- [ ] Grill round 4+
 - [ ] Tech stack decided
 - [ ] Data model decided
 - [ ] MCP server built
@@ -34,7 +35,10 @@
 - Time: **due date + estimate (mins)**
 - Folders: **flat categories**
 - Hosting: **Cloudflare** (app + MCP)
-- Login: **Google sign-in** (shared login, other apps will use it too)
+- Google accounts: **df.ai.lab.hq** for testing, **darrenfawcett1980** for real use
+- Login: **shared login service** (reused by other apps) – email + username + 6-digit PIN + fingerprint
+- Claude (MCP): add / read / edit / tick off. **Delete = soft delete** (crossed out, I confirm or undo in the app)
+- Offline: **yes**, basic offline + sync later
 - Review later: **flag on a note** + a Review screen
 - Reminders: **later** (in IDEAS.md)
 - Done tasks: **hidden, kept**
