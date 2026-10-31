@@ -20,7 +20,8 @@
 - [x] Mock Sheet created
 - [x] Grill round 3 done
 - [x] Grill rounds 4-5 done
-- [ ] Grill round 6+
+- [x] Grill round 6 done
+- [ ] Final round: look, name, sign-off
 - [ ] Tech stack decided
 - [ ] Data model decided
 - [ ] MCP server built
@@ -47,6 +48,11 @@
 - Review later: **flag on a note** + a Review screen
 - Reminders: **later** (in IDEAS.md)
 - Done tasks: **hidden, kept**
+- Sync: **phone talks only to the Worker**; Worker talks to Google (no Google login on the phone)
+- Worker reaches the Sheet with a **Google service account** (Sheet shared with it once)
+- MCP tools v1: add task/note, list tasks (by category/due), edit, tick off, list review-later notes,
+  add category, soft delete
+- Build order: 1) phone app + lock (offline) 2) Worker + Sheet sync 3) MCP for Claude
 
 ## Next step
 Finish the grill-me questions, then lock the plan.
