@@ -19,7 +19,8 @@
 - [x] Grill round 1 + 2 done
 - [x] Mock Sheet created
 - [x] Grill round 3 done
-- [ ] Grill round 4+
+- [x] Grill rounds 4-5 done
+- [ ] Grill round 6+
 - [ ] Tech stack decided
 - [ ] Data model decided
 - [ ] MCP server built
@@ -34,7 +35,7 @@
   - Lives in the Drive of `df.ai.lab.hq@gmail.com`
 - Time: **due date + estimate (mins)**
 - Folders: **flat categories**
-- Hosting: **app on GitHub Pages** (same as WMM Lite). MCP host = open question (Pages can't run servers)
+- Hosting: **app on GitHub Pages** (same as WMM Lite). **MCP on a free Cloudflare Worker** (reads/writes the Sheet)
 - Google accounts: **df.ai.lab.hq** for testing, **darrenfawcett1980** for real use
 - Login: **copy WMM Lite's lock** (`docs/lock.js` + `docs/lockui.js` on branch `claude/elegant-davinci-h39d2r`
   of DF-AI-Lab/wheres-my-money-lite): passcode + backup codes + fingerprint passkey, in the browser.
@@ -42,7 +43,7 @@
 - Claude deletes: crossed out, I confirm/undo; auto-deleted after **7 days** if ignored
 - Claude connects once with PIN/fingerprint, then stays connected
 - Claude (MCP): add / read / edit / tick off. **Delete = soft delete** (crossed out, I confirm or undo in the app)
-- Offline: **yes**, basic offline + sync later
+- Offline: **yes**. Phone keeps its own copy, syncs to the Sheet when online; MCP uses the same Sheet
 - Review later: **flag on a note** + a Review screen
 - Reminders: **later** (in IDEAS.md)
 - Done tasks: **hidden, kept**
