@@ -2,8 +2,10 @@
 (function () {
   'use strict';
   const S = window.Store, $ = id => document.getElementById(id);
-  const VERSION = '0.2.1';
+  // 🏷️ bump these with every change: VERSION for the live app, DEMO_VERSION for the demo
+  const VERSION = '1.01', DEMO_VERSION = '01';
   const DEMO = new URLSearchParams(location.search).has('demo');
+  const VER_LABEL = DEMO ? 'demo.v.' + DEMO_VERSION : 'v.' + VERSION;
   const SKEY = DEMO ? 'tn_demo_state_v1' : 'tn_state_v1';
   const store = DEMO ? sessionStorage : localStorage;
   const esc = t => String(t == null ? '' : t).replace(/[&<>"']/g, c => ({'&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'}[c]));
@@ -52,7 +54,7 @@
       notes: 'Quick thoughts by category', review: 'Notes you flagged to look at again', done: 'Hidden from your day, but kept',
       secrets: vault.key ? 'Open · locks after 1 min without a tap' : 'Locked · needs your PIN every time'};
     let h = `<div class="top"><div><h2>${titles[tab]}</h2><small>${esc(subs[tab])}</small></div>
-      <div class="topr">${DEMO ? '' : syncButton()}<button class="av" id="me" aria-label="Settings">${esc(initials())}</button></div></div>`;
+      <div class="topr">${DEMO ? '' : syncButton()}<div class="mewrap"><button class="av" id="me" aria-label="Settings">${esc(initials())}</button><small class="ver">${VER_LABEL}</small></div></div></div>`;
 
     if (tab === 'day') {
       const pending = st.tasks.filter(S.pendingDelete).map(r => ['tasks', r]).concat(st.notes.filter(S.pendingDelete).map(r => ['notes', r]));
@@ -285,7 +287,7 @@
         <button type="button" id="mexport">💾 Download a copy<span class="sub">All tasks and notes as a file</span></button>
         <button type="button" id="mdemo">${DEMO ? '🚪 Leave demo' : '🧪 Try the demo'}<span class="sub">${DEMO ? 'Back to your own data' : 'Fake data, your data is not touched'}</span></button>
       </div>
-      <p class="small">TaskNotes v${VERSION} · ${S.outboxCount(st)} change(s) waiting to sync</p>
+      <p class="small">TaskNotes ${VER_LABEL} · ${S.outboxCount(st)} change(s) waiting to sync</p>
       <button class="btn p" id="sdone" type="button">Done</button>`, sh => {
       chipPick(sh, 'lookchips');
       sh.querySelectorAll('#lookchips .chip').forEach(b => b.addEventListener('click', () => { st.settings.theme = b.dataset.v; applyLook(); save(true); }));

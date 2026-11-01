@@ -100,3 +100,9 @@ Darren follows SETUP.md (Pages → Google robot → Cloudflare → connect phone
 - Scrambled on the phone (AES-GCM, key from the lock key) before syncing. The Sheet gets a **Secrets** tab of gibberish. No Claude tool reads it.
 - Limit: only this phone's key opens them. A new phone needs the backup-file idea (see IDEAS.md).
 - Redeploy the Worker so it syncs the Secrets tab (an old Worker just leaves secrets on the phone).
+
+## 🏷️ Version numbers
+- Shown under the initials (top right) and in Settings.
+- Live: `v.1.01` → bump `VERSION` in `docs/app.js` **and** `docs/sw.js` (so phones get the new files).
+- Demo: `demo.v.01` → bump `DEMO_VERSION` in `docs/app.js`.
+- v.1.01: zoom turned off (no sideways sliding), version labels added.
