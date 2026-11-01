@@ -2,7 +2,7 @@
 (function () {
   'use strict';
   const S = window.Store, $ = id => document.getElementById(id);
-  const VERSION = '0.2.0';
+  const VERSION = '0.2.1';
   const DEMO = new URLSearchParams(location.search).has('demo');
   const SKEY = DEMO ? 'tn_demo_state_v1' : 'tn_state_v1';
   const store = DEMO ? sessionStorage : localStorage;
