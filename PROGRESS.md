@@ -110,3 +110,4 @@ Darren follows SETUP.md (Pages → Google robot → Cloudflare → connect phone
 - v.1.02 / demo.v.02: secret cards fold up (tap the name), plus Open all / Close all.
 - v.1.03 / demo.v.03: 🎉 update pop-up at the bottom when a new version is live.
 - v.1.04 / demo.v.04: ☁️ Sign in with Google (Settings → Google account). Pick your email; the app makes **TaskNotes Data** in that Drive and syncs to it. Same Google project as WMM (docs/config.js). Scope drive.file only. The Worker is now the "Advanced" option.
+- v.1.05 / demo.v.05: if Google Sheets is off, the app shows 4 steps, a Turn it on button and Try again.

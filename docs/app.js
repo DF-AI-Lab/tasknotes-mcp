@@ -3,7 +3,7 @@
   'use strict';
   const S = window.Store, $ = id => document.getElementById(id);
   // 🏷️ bump these with every change: VERSION for the live app, DEMO_VERSION for the demo
-  const VERSION = '1.04', DEMO_VERSION = '04';
+  const VERSION = '1.05', DEMO_VERSION = '05';
   const DEMO = new URLSearchParams(location.search).has('demo');
   const VER_LABEL = DEMO ? 'demo.v.' + DEMO_VERSION : 'v.' + VERSION;
   const SKEY = DEMO ? 'tn_demo_state_v1' : 'tn_state_v1';
@@ -411,10 +411,19 @@
     if (Sync.ready()) return '● On · through your Worker';
     return 'Off · sign in to save to your Google Sheet';
   }
-  function googleErr(sh, e) {
+  function googleErr(sh, e, retry) {
     const m = sh.querySelector('#gmsg');
-    m.textContent = '😕 ' + (e.message || 'Something went wrong. Try again.');
-    if (e.link) { const a = document.createElement('a'); a.href = e.link; a.target = '_blank'; a.rel = 'noopener'; a.textContent = ' Turn it on'; m.appendChild(a); }
+    if (!e.link) { m.textContent = '😕 ' + (e.message || 'Something went wrong. Try again.'); return; }
+    // Google Sheets is off in the Google project: show the steps, a button to Google's page, and Try again
+    m.innerHTML = `<span class="gsteps"><b>⚠️ Google Sheets is not switched on yet</b>
+      <span>This is a one-time job. Only the app maker needs to do it.</span>
+      <ol><li>Tap <b>Turn it on</b> below. A Google page opens.</li>
+      <li>Click the blue <b>Enable</b> button.</li>
+      <li>Wait 1 minute, then close that page.</li>
+      <li>Come back here and tap <b>Try again</b>.</li></ol>
+      <a class="btn" href="${esc(e.link)}" target="_blank" rel="noopener">🔧 Turn it on</a>
+      <button class="btn p" type="button" id="gretry">✅ I've turned it on, try again</button></span>`;
+    m.querySelector('#gretry').addEventListener('click', retry || (() => googleIn(sh, false)));
   }
   async function googleIn(sh, pick) {
     const m = sh.querySelector('#gmsg');
@@ -424,6 +433,7 @@
       sendAll();
       m.textContent = '✅ Connected. Saving…';
       await syncNow();
+      if (syncE && syncE.link) { googleErr(sh, syncE); return; }
       closeSheet(); render();
       toast(syncErr ? '😕 ' + syncErr : '☁️ Saving to ' + (c.email || 'your Google Sheet'));
     } catch (e) { googleErr(sh, e); }
@@ -459,6 +469,7 @@
         sh.querySelector('#gmsg').textContent = 'Syncing…';
         try { if (!G.token()) await G.wake(); } catch (e) { googleErr(sh, e); return; }
         await syncNow(); googleSheet();
+        if (syncE && syncE.link) googleErr($('sheet'), syncE, () => $('sheet').querySelector('#gsync').click());
       });
       sh.querySelector('#gpick').addEventListener('click', () => googleIn(sh, true));
       sh.querySelector('#gout').addEventListener('click', () => confirmSheet('🚪 Sign out of Google?', 'Nothing is deleted. Your data stays on this phone and in the Sheet.', 'Sign out', () => {
@@ -591,7 +602,7 @@
   }
 
   // ---------- sync ----------
-  let syncing = false, syncErr = '';
+  let syncing = false, syncErr = '', syncE = null;
   async function syncNow(loud) {
     if (DEMO || syncing || !cloudOn()) return;
     if (wakeP) await wakeP.catch(() => {});
@@ -599,13 +610,13 @@
     syncing = true; if (!$('app').hidden) render();
     try {
       const r = G.on() ? await G.run(st) : await Sync.run(st);
-      syncErr = '';
+      syncErr = ''; syncE = null;
       S.purge(st, Date.now());
       save(true);
       if (vault.key) await refreshVault(true);
       if (loud) toast('🔄 Synced' + (r.sent ? ' · sent ' + r.sent : ''));
     } catch (e) {
-      syncErr = e.message || 'Sync failed';
+      syncErr = e.message || 'Sync failed'; syncE = e;
       if (e.needTap) { syncErr = 'Tap anywhere to reconnect Google'; wakeOnTap(); loud = false; }
       if (loud) toast('😕 ' + syncErr);
     } finally { syncing = false; render(); }

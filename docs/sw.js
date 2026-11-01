@@ -1,6 +1,6 @@
 /* TaskNotes - the service worker: keeps the app files on the phone so it opens with no internet.
    Bump VERSION with every app version. */
-const VERSION = '1.04';
+const VERSION = '1.05';
 const CACHE = 'tasknotes-' + VERSION;
 const FILES = ['./', 'index.html', 'app.css', 'app.js', 'store.js', 'lock.js', 'vault.js', 'lockui.js', 'sync.js', 'config.js', 'gsheet.js', 'manifest.json', 'icon-192.png', 'icon-512.png', 'icon-maskable-512.png'];
 
