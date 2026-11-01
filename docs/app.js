@@ -3,13 +3,15 @@
   'use strict';
   const S = window.Store, $ = id => document.getElementById(id);
   // 🏷️ bump these with every change: VERSION for the live app, DEMO_VERSION for the demo
-  const VERSION = '1.03', DEMO_VERSION = '03';
+  const VERSION = '1.04', DEMO_VERSION = '04';
   const DEMO = new URLSearchParams(location.search).has('demo');
   const VER_LABEL = DEMO ? 'demo.v.' + DEMO_VERSION : 'v.' + VERSION;
   const SKEY = DEMO ? 'tn_demo_state_v1' : 'tn_state_v1';
   const store = DEMO ? sessionStorage : localStorage;
   const esc = t => String(t == null ? '' : t).replace(/[&<>"']/g, c => ({'&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'}[c]));
   const today = () => new Date();
+  const G = window.GSheet;
+  const cloudOn = () => !DEMO && (G.on() || Sync.ready());   // ☁️ Google account first, the Worker is the advanced option
   const col = c => /^#[0-9a-f]{3,8}$/i.test(String(c || '')) ? c : '#64748b';
 
   // ---------- state ----------
@@ -112,7 +114,7 @@
   }
   function initials() { const n = (st.settings.name || '').trim(); return n ? n.slice(0, 2).toUpperCase() : '⚙️'; }
   function syncButton() {
-    if (!Sync.ready()) return '<button class="sync" id="syncb" aria-label="Cloud sync is off">☁️<i></i></button>';
+    if (!cloudOn()) return '<button class="sync" id="syncb" aria-label="Cloud sync is off">☁️<i></i></button>';
     const n = S.outboxCount(st);
     const cls = syncing ? 'spin' : syncErr ? 'err' : n ? 'wait' : 'ok';
     return `<button class="sync ${cls}" id="syncb" aria-label="Sync now">🔄<i></i></button>`;
@@ -171,7 +173,7 @@
       return;
     }
     if (b.id === 'me') { settingsSheet(); return; }
-    if (b.id === 'syncb') { if (Sync.ready()) syncNow(true); else syncSheet(); }
+    if (b.id === 'syncb') { if (cloudOn()) syncNow(true); else googleSheet(); }
   });
   $('nav').addEventListener('click', e => {
     const b = e.target.closest('button[data-tab]');
@@ -281,7 +283,7 @@
       <div class="field"><label for="sd">Free time in your day (hours)</label><input class="inp" id="sd" type="number" min="1" max="16" inputmode="numeric" value="${Math.round((Number(st.settings.dayMins) || 360) / 60)}"></div>
       <div class="menu">
         <button type="button" id="mcats">🗂️ Categories<span class="sub">${S.cats(st).length} categories · add, rename, colour</span></button>
-        ${DEMO ? '' : `<button type="button" id="msync">☁️ Cloud sync<span class="sub">${Sync.ready() ? (st.lastSync ? 'On · last synced ' + new Date(st.lastSync).toLocaleString('en-GB', {hour: '2-digit', minute: '2-digit', day: 'numeric', month: 'short'}) : 'On · not synced yet') : 'Off · keep a copy in your Google Sheet'}</span></button>
+        ${DEMO ? '' : `<button type="button" id="msync">☁️ Google account<span class="sub">${cloudText()}</span></button>
         <button type="button" id="mfp">👆 Fingerprint<span class="sub">${fp ? '● On for this phone' : window.LockUI.canFinger() ? 'Open with your finger' : 'Not available on this device'}</span></button>
         <button type="button" id="mpin">🔢 Change PIN<span class="sub">Pick a new 6-digit PIN</span></button>
         <button type="button" id="mcodes">🔑 New backup codes<span class="sub">${window.LockUI.codesLeft()} of 10 left · the old ones stop working</span></button>
@@ -307,7 +309,7 @@
       });
       sh.querySelector('#mdemo').addEventListener('click', () => { location.href = DEMO ? './' : './?demo=1'; });
       if (DEMO) return;
-      sh.querySelector('#msync').addEventListener('click', () => { keep(); syncSheet(); });
+      sh.querySelector('#msync').addEventListener('click', () => { keep(); googleSheet(); });
       sh.querySelector('#mfp').addEventListener('click', async () => {
         if (window.LockUI.fingerOn()) { window.LockUI.fingerOff(); toast('👆 Fingerprint off'); settingsSheet(); return; }
         if (!window.LockUI.canFinger()) return;
@@ -374,8 +376,9 @@
       <div class="field"><label for="yu">Worker address</label><input class="inp" id="yu" placeholder="https://tasknotes.yourname.workers.dev" value="${esc(c.url)}" autocapitalize="off" spellcheck="false"></div>
       <div class="field"><label for="yk">App key</label><input class="inp" id="yk" type="password" value="${esc(c.key)}" autocapitalize="off" spellcheck="false"></div>
       <p class="small" id="ymsg"></p>
-      <div class="btns">${c.url ? '<button class="btn" id="yoff" type="button">Turn off</button>' : ''}<button class="btn p" id="ysave" type="button">Test and save</button></div>`, sh => {
+      <div class="btns"><button class="btn" id="yback" type="button">Back</button>${c.url ? '<button class="btn" id="yoff" type="button">Turn off</button>' : ''}<button class="btn p" id="ysave" type="button">Test and save</button></div>`, sh => {
       const msg = t => { sh.querySelector('#ymsg').textContent = t; };
+      sh.querySelector('#yback').addEventListener('click', googleSheet);
       sh.querySelector('#ysave').addEventListener('click', async () => {
         const cfg = {url: sh.querySelector('#yu').value, key: sh.querySelector('#yk').value};
         if (!/^https:\/\//.test(cfg.url.trim())) { msg('The address should start with https://'); return; }
@@ -385,8 +388,7 @@
           if (bad) { msg('😕 ' + bad); return; }
           Sync.setConfig(cfg);
           // first link: everything on this phone goes up once
-          S.KINDS.forEach(k => (st[k] || []).forEach(r => { st.dirty[k + ':' + (k === 'cats' ? r.name : r.id)] = r.updated || new Date().toISOString(); }));
-          save(true);
+          sendAll();
           msg('✅ Connected. Syncing…');
           await syncNow(true);
           closeSheet();
@@ -394,6 +396,74 @@
       });
       const off = sh.querySelector('#yoff');
       if (off) off.addEventListener('click', () => { Sync.setConfig({url: '', key: ''}); closeSheet(); render(); toast('☁️ Cloud sync off. Your data stays on this phone.'); });
+    });
+  }
+
+
+  // ---------- ☁️ Google account (like Where's My Money: pick your email, the app does the rest) ----------
+  const sendAll = () => {                              // first link: everything on this phone goes up once
+    S.KINDS.forEach(k => (st[k] || []).forEach(r => { st.dirty[k + ':' + (k === 'cats' ? r.name : r.id)] = r.updated || new Date().toISOString(); }));
+    save(true);
+  };
+  const when = t => new Date(t).toLocaleString('en-GB', {hour: '2-digit', minute: '2-digit', day: 'numeric', month: 'short'});
+  function cloudText() {
+    if (G.on()) return '● On · ' + (G.config().email || 'Google') + (syncErr ? ' · ⚠️ ' + syncErr : st.lastSync ? ' · synced ' + when(st.lastSync) : '');
+    if (Sync.ready()) return '● On · through your Worker';
+    return 'Off · sign in to save to your Google Sheet';
+  }
+  function googleErr(sh, e) {
+    const m = sh.querySelector('#gmsg');
+    m.textContent = '😕 ' + (e.message || 'Something went wrong. Try again.');
+    if (e.link) { const a = document.createElement('a'); a.href = e.link; a.target = '_blank'; a.rel = 'noopener'; a.textContent = ' Turn it on'; m.appendChild(a); }
+  }
+  async function googleIn(sh, pick) {
+    const m = sh.querySelector('#gmsg');
+    m.textContent = 'Opening Google…';
+    try {
+      const c = await G.connect(pick);
+      sendAll();
+      m.textContent = '✅ Connected. Saving…';
+      await syncNow();
+      closeSheet(); render();
+      toast(syncErr ? '😕 ' + syncErr : '☁️ Saving to ' + (c.email || 'your Google Sheet'));
+    } catch (e) { googleErr(sh, e); }
+  }
+  function googleSheet() {
+    if (DEMO) { toast('🧪 Not in the demo'); return; }
+    G.ready().catch(() => {});                          // load Google's sign-in early, so the tap opens it straight away
+    const g = G.config();
+    if (!G.on()) {
+      openSheet(`<h2>☁️ Google account</h2>
+        <p class="small">Pick your Google email. The app makes a Sheet called <b>TaskNotes Data</b> in that Drive and saves everything there.</p>
+        <p class="small">🔒 It can only see files it made, never the rest of your Drive. Secrets stay scrambled.</p>
+        <p class="small" id="gmsg"></p>
+        <button class="btn p gbtn" id="gin" type="button"><b>G</b> Sign in with Google</button>
+        <button class="linkbtn" id="gadv" type="button">Advanced: use your own Worker instead</button>`, sh => {
+        sh.querySelector('#gin').addEventListener('click', () => googleIn(sh, false));
+        sh.querySelector('#gadv').addEventListener('click', syncSheet);
+      });
+      return;
+    }
+    openSheet(`<h2>☁️ Google account</h2>
+      <div class="gacc"><span class="gav">${esc((g.email || 'G').slice(0, 1).toUpperCase())}</span><div><b>${esc(g.email || 'Google account')}</b><small class="${syncErr ? 'bad' : 'good'}">${syncErr ? '⚠️ ' + esc(syncErr) : '● On' + (st.lastSync ? ' · synced ' + when(st.lastSync) : '')}</small></div></div>
+      <p class="small" id="gmsg"></p>
+      <div class="menu">
+        <a class="mlink" href="${esc(G.sheetUrl())}" target="_blank" rel="noopener">📄 Open my Sheet<span class="sub">TaskNotes Data, in this Google Drive</span></a>
+        <button type="button" id="gsync">🔄 Sync now<span class="sub">${S.outboxCount(st)} change(s) waiting</span></button>
+        <button type="button" id="gpick">🔁 Switch account<span class="sub">Save to a different Google email</span></button>
+        <button type="button" id="gout">🚪 Sign out<span class="sub">Your data stays on this phone</span></button>
+      </div>
+      <button class="btn" id="gdone" type="button">Done</button>`, sh => {
+      sh.querySelector('#gdone').addEventListener('click', closeSheet);
+      sh.querySelector('#gsync').addEventListener('click', async () => {
+        sh.querySelector('#gmsg').textContent = 'Syncing…';
+        try { if (!G.token()) await G.wake(); } catch (e) { googleErr(sh, e); return; }
+        await syncNow(); googleSheet();
+      });
+      sh.querySelector('#gpick').addEventListener('click', () => googleIn(sh, true));
+      sh.querySelector('#gout').addEventListener('click', () => confirmSheet('🚪 Sign out of Google?', 'Nothing is deleted. Your data stays on this phone and in the Sheet.', 'Sign out', () => {
+        G.signOut(); syncErr = ''; render(); toast('☁️ Signed out. Your data stays on this phone.');
+      }));
     });
   }
 
@@ -523,11 +593,12 @@
   // ---------- sync ----------
   let syncing = false, syncErr = '';
   async function syncNow(loud) {
-    if (DEMO || syncing || !Sync.ready()) return;
+    if (DEMO || syncing || !cloudOn()) return;
+    if (wakeP) await wakeP.catch(() => {});
     if (!navigator.onLine) { if (loud) toast('📴 Offline. Changes will sync later.'); return; }
     syncing = true; if (!$('app').hidden) render();
     try {
-      const r = await Sync.run(st);
+      const r = G.on() ? await G.run(st) : await Sync.run(st);
       syncErr = '';
       S.purge(st, Date.now());
       save(true);
@@ -535,9 +606,24 @@
       if (loud) toast('🔄 Synced' + (r.sent ? ' · sent ' + r.sent : ''));
     } catch (e) {
       syncErr = e.message || 'Sync failed';
+      if (e.needTap) { syncErr = 'Tap anywhere to reconnect Google'; wakeOnTap(); loud = false; }
       if (loud) toast('😕 ' + syncErr);
     } finally { syncing = false; render(); }
   }
+  // Google's sign-in lasts an hour. A new one needs a tap (browsers block pop-ups otherwise), so the next tap
+  // anywhere (even the PIN tap) quietly gets a fresh one, with no account picker.
+  let wakeP = null, wakeArmed = false;
+  function wakeOnTap() {
+    if (wakeArmed || !G.on()) return;
+    wakeArmed = true;
+    G.ready().catch(() => {});
+    document.addEventListener('pointerdown', function h() {
+      document.removeEventListener('pointerdown', h, true);
+      wakeArmed = false;
+      wakeP = G.wake().then(() => { wakeP = null; syncErr = ''; syncNow(); }, e => { wakeP = null; syncErr = e.message; if (!$('app').hidden) render(); });
+    }, true);
+  }
+  if (!DEMO && G.on() && !G.token()) wakeOnTap();
   window.addEventListener('online', () => syncNow());
   setInterval(() => { if (document.visibilityState === 'visible') syncNow(); }, 60000);
   document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') syncNow(); });
