@@ -172,3 +172,11 @@ h3.sec button{background:none;border:0;color:var(--m);font:500 11px var(--mono);
 .item .t,.sn .tx,.gone .row span,.tile b,.sec-card b,.top h2,.top small{overflow-wrap:anywhere}
 .item,.sn,.sec-card,.vault,.quick,.nav{min-width:0;max-width:100%}
 .nav button{padding:5px 6px;flex:1;min-width:0}
+
+/* ---------- 🎉 update pop-up ---------- */
+.upd{position:fixed;left:12px;right:12px;bottom:calc(132px + env(safe-area-inset-bottom));z-index:55;max-width:536px;margin:0 auto;
+  background:var(--k2);border:1px solid var(--ac);border-radius:18px;padding:12px;display:flex;gap:10px;align-items:center;box-shadow:0 10px 30px rgba(0,0,0,.4);animation:sup .3s ease}
+.updt{flex:1;min-width:0;display:flex;flex-direction:column}
+.updt b{font-size:14.5px}.updt small{color:var(--m);font-size:12.5px;overflow-wrap:anywhere}
+.upd .btn{width:auto;padding:10px 14px;flex:none}
+.updx{background:none;border:0;color:var(--m);font-size:16px;padding:6px;flex:none}

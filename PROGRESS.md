@@ -105,5 +105,7 @@ Darren follows SETUP.md (Pages → Google robot → Cloudflare → connect phone
 - Shown under the initials (top right) and in Settings.
 - Live: `v.1.01` → bump `VERSION` in `docs/app.js` **and** `docs/sw.js` (so phones get the new files).
 - Demo: `demo.v.01` → bump `DEMO_VERSION` in `docs/app.js`.
+- Then update `docs/version.json` (version, demo, notes). Open apps see it and show the 🎉 update pop-up.
 - v.1.01: zoom turned off (no sideways sliding), version labels added.
 - v.1.02 / demo.v.02: secret cards fold up (tap the name), plus Open all / Close all.
+- v.1.03 / demo.v.03: 🎉 update pop-up at the bottom when a new version is live.

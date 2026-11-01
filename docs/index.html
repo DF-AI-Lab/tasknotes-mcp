@@ -49,6 +49,13 @@
   <div class="sheet" id="sheet" role="dialog" aria-modal="true"></div>
 </div>
 
+<!-- 🎉 update pop-up (app.js shows it when version.json is newer) -->
+<div class="upd" id="upd" role="alert" hidden>
+  <div class="updt"><b id="updh">🎉 New update</b><small id="updn"></small></div>
+  <button class="btn p" id="updgo" type="button">Update now</button>
+  <button class="updx" id="updx" type="button" aria-label="Later">✕</button>
+</div>
+
 <div class="toast" id="toast" role="status"><span id="tmsg"></span><button id="undo" type="button">Undo</button></div>
 
 <script src="store.js"></script>

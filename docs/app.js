@@ -3,7 +3,7 @@
   'use strict';
   const S = window.Store, $ = id => document.getElementById(id);
   // 🏷️ bump these with every change: VERSION for the live app, DEMO_VERSION for the demo
-  const VERSION = '1.02', DEMO_VERSION = '02';
+  const VERSION = '1.03', DEMO_VERSION = '03';
   const DEMO = new URLSearchParams(location.search).has('demo');
   const VER_LABEL = DEMO ? 'demo.v.' + DEMO_VERSION : 'v.' + VERSION;
   const SKEY = DEMO ? 'tn_demo_state_v1' : 'tn_state_v1';
@@ -541,6 +541,41 @@
   window.addEventListener('online', () => syncNow());
   setInterval(() => { if (document.visibilityState === 'visible') syncNow(); }, 60000);
   document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') syncNow(); });
+
+  // ---------- 🎉 updates ----------
+  // version.json on the site says the newest version. If it is newer than this copy, a pop-up offers to update.
+  // "Update now" asks the service worker to fetch the new files, then reloads the page.
+  let updSkip = '';
+  async function checkUpdate() {
+    if (!navigator.onLine) return;
+    try {
+      const j = await (await fetch('version.json?t=' + Date.now(), {cache: 'no-store'})).json();
+      const want = String(DEMO ? j.demo : j.version || ''), have = DEMO ? DEMO_VERSION : VERSION;
+      if (!want || Number(want) <= Number(have) || updSkip === want) return;
+      $('updh').textContent = '🎉 New update: ' + (DEMO ? 'demo.v.' : 'v.') + want;
+      $('updn').textContent = j.notes || 'Tap to get the newest version.';
+      $('upd').hidden = false; $('upd').dataset.v = want;
+    } catch (e) { /* offline or no file: try later */ }
+  }
+  $('updx').addEventListener('click', () => { updSkip = $('upd').dataset.v; $('upd').hidden = true; });
+  $('updgo').addEventListener('click', async () => {
+    $('updgo').disabled = true; $('updgo').textContent = 'Updating…';
+    save(true);
+    const reload = () => location.reload();
+    try {
+      const reg = 'serviceWorker' in navigator && await navigator.serviceWorker.getRegistration();
+      if (reg) {
+        navigator.serviceWorker.addEventListener('controllerchange', reload);
+        await reg.update();
+        setTimeout(reload, 6000);                     // the new files may already be in: reload anyway
+        return;
+      }
+    } catch (e) { /* reload below */ }
+    reload();
+  });
+  setTimeout(checkUpdate, 3000);
+  setInterval(checkUpdate, 10 * 60000);
+  document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') checkUpdate(); });
 
   // ---------- start ----------
   applyLook();

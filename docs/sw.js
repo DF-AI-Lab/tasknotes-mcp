@@ -1,6 +1,6 @@
 /* TaskNotes - the service worker: keeps the app files on the phone so it opens with no internet.
    Bump VERSION with every app version. */
-const VERSION = '1.02';
+const VERSION = '1.03';
 const CACHE = 'tasknotes-' + VERSION;
 const FILES = ['./', 'index.html', 'app.css', 'app.js', 'store.js', 'lock.js', 'vault.js', 'lockui.js', 'sync.js', 'manifest.json', 'icon-192.png', 'icon-512.png', 'icon-maskable-512.png'];
 
@@ -29,7 +29,7 @@ self.addEventListener('fetch', e => {
   if (req.mode === 'navigate') {                                             // the page: newest if online, else the kept one
     e.respondWith((async () => {
       try {
-        const r = await fetch(req);
+        const r = await fetch(req, {cache: 'no-cache'});                    // always check for a newer page
         if (r.ok) { const c = await caches.open(CACHE); c.put('./', r.clone()); }
         return r;
       } catch (err) {
