@@ -106,3 +106,4 @@ Darren follows SETUP.md (Pages → Google robot → Cloudflare → connect phone
 - Live: `v.1.01` → bump `VERSION` in `docs/app.js` **and** `docs/sw.js` (so phones get the new files).
 - Demo: `demo.v.01` → bump `DEMO_VERSION` in `docs/app.js`.
 - v.1.01: zoom turned off (no sideways sliding), version labels added.
+- v.1.02 / demo.v.02: secret cards fold up (tap the name), plus Open all / Close all.

@@ -161,7 +161,10 @@ h3.sec button{background:none;border:0;color:var(--m);font:500 11px var(--mono);
 .vbar{display:flex;gap:10px;padding:14px 18px 0}.vbar .btn:first-child{flex:2}.vbar .btn:last-child{flex:1}
 .sec-card{margin:8px 18px;background:var(--k);border:1px solid var(--ln);border-radius:14px;padding:11px 12px;display:flex;flex-direction:column;gap:6px}
 .sec-card.bad{opacity:.6}
-.sec-card .sh{display:flex;gap:6px;align-items:center}.sec-card .sh b{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.sec-card .sh{display:flex;gap:6px;align-items:center}
+.stog{flex:1;min-width:0;display:flex;gap:8px;align-items:center;background:none;border:0;padding:4px 0;text-align:left}
+.stog i{font-style:normal;color:var(--ac);width:12px;flex:none}
+.stog b{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .stx{font:500 14px/1.45 var(--mono);white-space:pre-wrap;word-break:break-word;background:var(--k2);border-radius:10px;padding:8px 10px;user-select:all}
 .vfoot{margin:14px 18px;color:var(--m)}
 

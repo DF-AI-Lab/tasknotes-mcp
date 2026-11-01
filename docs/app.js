@@ -3,7 +3,7 @@
   'use strict';
   const S = window.Store, $ = id => document.getElementById(id);
   // 🏷️ bump these with every change: VERSION for the live app, DEMO_VERSION for the demo
-  const VERSION = '1.01', DEMO_VERSION = '01';
+  const VERSION = '1.02', DEMO_VERSION = '02';
   const DEMO = new URLSearchParams(location.search).has('demo');
   const VER_LABEL = DEMO ? 'demo.v.' + DEMO_VERSION : 'v.' + VERSION;
   const SKEY = DEMO ? 'tn_demo_state_v1' : 'tn_state_v1';
@@ -162,6 +162,8 @@
     if (d.okdel) { const [k, id] = d.okdel.split(':'); S.confirmDelete(st, k, id); save(); render(); toast('🗑️ Deleted', () => { S.undelete(st, k, id); save(); render(); }); return; }
     if (d.vadd) { secretSheet(null); return; }
     if (d.vedit) { secretSheet(d.vedit); return; }
+    if (d.vtog) { if (vault.open.has(d.vtog)) vault.open.delete(d.vtog); else vault.open.add(d.vtog); render(); return; }
+    if (d.vall) { if (vault.open.size) vault.open.clear(); else vault.items.forEach(x => vault.open.add(x.id)); render(); return; }
     if (d.vlock) { lockVault(); toast('🔒 Secrets locked'); return; }
     if (d.vcopy) {
       const it = vault.items.find(x => x.id === d.vcopy);
@@ -398,11 +400,11 @@
   // ---------- 🔐 secrets ----------
   // Locked by default. The PIN opens it (every time); the key and the readable list live only in memory.
   // It locks again after 1 minute without a tap, when you leave the tab, or when the app goes to the background.
-  const vault = {key: null, items: [], at: 0, busy: false};
+  const vault = {key: null, items: [], at: 0, busy: false, open: new Set()};   // open = cards showing their text
   const liveSecrets = () => st.secrets.filter(live);
   function lockVault(quiet) {
     if (!vault.key && !vault.items.length) return;
-    vault.key = null; vault.items = [];
+    vault.key = null; vault.items = []; vault.open.clear();
     if (!$('sheetwrap').hidden && $('sheet').querySelector('#xt')) closeSheet();
     if (!quiet && tab === 'secrets' && !$('app').hidden) render();
   }
@@ -425,9 +427,10 @@
     }
     let h = `<div class="vbar"><button class="btn p" data-vadd="1" type="button">＋ New secret</button><button class="btn" data-vlock="1" type="button">🔒 Lock</button></div>`;
     h += `<h3 class="sec"><span>${vault.items.length} secret${vault.items.length === 1 ? '' : 's'}</span></h3>`;
-    h += vault.items.length ? vault.items.map(it => `<div class="sec-card${it.bad ? ' bad' : ''}">
-        <div class="sh"><b>${esc(it.title)}</b>${it.bad ? '' : `<button class="mini" data-vcopy="${esc(it.id)}" type="button">📋 Copy</button>`}<button class="mini" data-vedit="${esc(it.id)}" type="button">${it.bad ? '🗑️' : '✏️'}</button></div>
-        ${it.text ? `<div class="stx">${esc(it.text)}</div>` : ''}</div>`).join('')
+    if (vault.items.length > 1) h = h.replace('</span></h3>', `</span><button data-vall="1">${vault.open.size ? 'Close all' : 'Open all'}</button></h3>`);
+    h += vault.items.length ? vault.items.map(it => { const on = vault.open.has(it.id); return `<div class="sec-card${it.bad ? ' bad' : ''}${on ? ' on' : ''}">
+        <div class="sh"><button class="stog" data-vtog="${esc(it.id)}" type="button" aria-expanded="${on}"><i>${on ? '▾' : '▸'}</i><b>${esc(it.title)}</b></button>${it.bad ? '' : `<button class="mini" data-vcopy="${esc(it.id)}" type="button">📋 Copy</button>`}<button class="mini" data-vedit="${esc(it.id)}" type="button">${it.bad ? '🗑️' : '✏️'}</button></div>
+        ${on && it.text ? `<div class="stx">${esc(it.text)}</div>` : ''}</div>`; }).join('')
       : '<div class="empty">Nothing here yet. Tap ＋ New secret 👆</div>';
     h += '<p class="small vfoot">Scrambled with your PIN before it leaves the phone. The Sheet and Claude only see gibberish.</p>';
     return h;
