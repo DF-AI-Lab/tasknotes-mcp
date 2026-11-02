@@ -5,7 +5,7 @@
 // No client ID in config.js = pretend mode (this phone only, no Google).
 
 const Passport = (() => {
-  const VERSION = '0.3.1';
+  const VERSION = '0.3.2';
   const cloud = typeof PassportCloud !== 'undefined' && PassportCloud.enabled;
   const KEY = cloud ? 'passport-v2' : 'passport-demo-v2';
   const MAX_TRIES = 5;          // wrong passcodes before lock
