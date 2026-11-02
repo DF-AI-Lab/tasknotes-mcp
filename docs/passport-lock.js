@@ -30,10 +30,10 @@
   }
 
   function start(opts) {
-    o = Object.assign({name: () => '', setName: null, onEnter: null, demo: false}, opts);
+    o = Object.assign({name: () => '', setName: null, onEnter: null, onSignOut: null, demo: false}, opts);
     if (o.demo) { html.classList.remove('lockon'); o.onEnter && o.onEnter(); return; }
     ready = fetch('passport/theme.json').then(r => r.json()).then(theme => {
-      PassportUI.start({app: APP, theme, mount: $('passport'), onUnlocked: p => inApp(p)});
+      PassportUI.start({app: APP, theme, mount: $('passport'), onUnlocked: p => inApp(p), onSignOut: () => o.onSignOut && o.onSignOut()});
     });
     // locks again after 5 minutes without a tap
     const touch = () => { if (!html.classList.contains('lockon')) used = Date.now(); };
