@@ -140,6 +140,20 @@
     }
     return id;
   }
+  // the Sheet from before Passport: move it into App data - DON'T DELETE / DF…… / Todo (once)
+  async function place(id, fetcher) {
+    const pp = PP(); if (!pp || config().home === pp.id) return id;
+    const home = await PC().appFolder(pp.id, 'Todo');
+    let f;
+    try { f = await api(`${DRIVE}/files/${id}?fields=id,parents,trashed`, {}, fetcher); } catch (e) { if (e.status !== 404) throw e; }
+    if (!f || f.trashed) id = await findOrMake(fetcher);
+    else if (!(f.parents || []).includes(home)) {
+      const from = (f.parents || []).join(',');
+      await api(`${DRIVE}/files/${id}?addParents=${home}${from ? '&removeParents=' + from : ''}&fields=id`, {method: 'PATCH', body: '{}'}, fetcher);
+    }
+    setConfig(Object.assign(config(), {sheetId: id, home: pp.id}));
+    return id;
+  }
   async function email(fetcher) {
     try { return ((await api(`${DRIVE}/about?fields=user(emailAddress)`, {}, fetcher)).user || {}).emailAddress || ''; } catch (e) { return ''; }
   }
@@ -148,7 +162,7 @@
   async function connect(pick, fetcher) {
     await signIn(pick ? 'pick' : 'first');
     const who = (PP() || {}).email || await email(fetcher), id = await findOrMake(fetcher);
-    setConfig({on: true, email: who, sheetId: id});
+    setConfig({on: true, email: who, sheetId: id, home: (PP() || {}).id || ''});
     return config();
   }
   // no token this visit: get one quietly (needs a tap, browsers block pop-ups otherwise)
@@ -188,6 +202,7 @@
     if (!token()) { const e = new Error('Tap anywhere to reconnect Google.'); e.needTap = true; throw e; }
     let id = config().sheetId;
     if (!id) { id = await findOrMake(fetcher); setConfig(Object.assign(config(), {sheetId: id})); }
+    id = await place(id, fetcher);
     let sent = S.outbox(state), snap;
     try { snap = await readAll(id, fetcher); }
     catch (e) {
