@@ -61,7 +61,14 @@
   function config() { try { return JSON.parse(ls.getItem(KEY)) || {}; } catch (e) { return {}; } }
   function setConfig(c) { try { if (c) ls.setItem(KEY, JSON.stringify(c)); else ls.removeItem(KEY); } catch (e) { /* private window */ } }
   const on = () => !!config().on;
-  function token() { try { const t = JSON.parse(ss.getItem(TOK)); return t && t.exp > Date.now() + 60000 ? t.t : ''; } catch (e) { return ''; } }
+  // 🛂 Passport: one Google sign-in for every DF app. Its token works here too (same Google key)
+  // (Passport + PassportCloud are page-level consts, not window.* properties)
+  const PC = () => typeof PassportCloud !== 'undefined' && PassportCloud.enabled ? PassportCloud : null;
+  const PP = () => PC() && typeof Passport !== 'undefined' ? Passport.find(Passport.appAccount('tasknotes')) : null;
+  function token() {
+    try { const t = JSON.parse(ss.getItem(TOK)); if (t && t.exp > Date.now() + 60000) return t.t; } catch (e) { /* none */ }
+    return (PC() && PC().token()) || '';
+  }
   function setToken(t, secs) { try { if (t) ss.setItem(TOK, JSON.stringify({t, exp: Date.now() + (secs || 3600) * 1000})); else ss.removeItem(TOK); } catch (e) { /* ignore */ } }
   const clientId = () => (root.TN_CONFIG || {}).googleClientId || '';
   const sheetUrl = () => config().sheetId ? 'https://docs.google.com/spreadsheets/d/' + config().sheetId + '/edit' : '';
@@ -78,6 +85,8 @@
   }
   // mode: 'first' (normal Google sign-in), 'pick' (choose another account), 'quiet' (no picker: you said yes before)
   async function signIn(mode) {
+    const pp = PP();
+    if (pp) return PC().ensureToken(pp.email);      // the passport's Google account, always
     if (!clientId()) throw new Error('Google sign-in is not set up in this copy of the app.');
     await loadGsi();
     const hint = mode === 'quiet' ? config().email : '';
@@ -110,16 +119,26 @@
     return r.status === 204 ? {} : r.json();
   }
 
-  // find "TaskNotes Data" in your Drive (only files this app made are visible), or make it
+  // find "TaskNotes Data" in your Drive (only files this app made are visible), or make it.
+  // With a passport it lives in: App data - DON'T DELETE / DF…… / Todo (moved there if it was loose in My Drive)
   async function findOrMake(fetcher) {
+    const pp = PP(), home = pp ? await PC().appFolder(pp.id, 'Todo') : '';
     const q = encodeURIComponent(`name='${NAME}' and mimeType='${SHEET_TYPE}' and trashed=false`);
-    const list = await api(`${DRIVE}/files?q=${q}&orderBy=createdTime&fields=files(id,name)`, {}, fetcher);
-    const f = (list.files || []).find(x => x.name === NAME);
-    if (f) return f.id;
-    const made = await api(SHEETS, {method: 'POST', body: JSON.stringify({properties: {title: NAME},
-      sheets: Object.values(TABS).map(title => ({properties: {title}}))})}, fetcher);
-    await writeAll(made.spreadsheetId, {tasks: [], notes: [], cats: [], secrets: []}, fetcher);
-    return made.spreadsheetId;
+    const list = await api(`${DRIVE}/files?q=${q}&orderBy=createdTime&fields=files(id,name,parents)`, {}, fetcher);
+    const files = (list.files || []).filter(x => x.name === NAME);
+    let f = (home && files.find(x => (x.parents || []).includes(home))) || files[0], id;
+    if (f) id = f.id;
+    else {
+      const made = await api(SHEETS, {method: 'POST', body: JSON.stringify({properties: {title: NAME},
+        sheets: Object.values(TABS).map(title => ({properties: {title}}))})}, fetcher);
+      await writeAll(made.spreadsheetId, {tasks: [], notes: [], cats: [], secrets: []}, fetcher);
+      id = made.spreadsheetId; f = {parents: []};
+    }
+    if (home && !(f.parents || []).includes(home)) {
+      const from = (f.parents || []).join(',');
+      await api(`${DRIVE}/files/${id}?addParents=${home}${from ? '&removeParents=' + from : ''}&fields=id`, {method: 'PATCH', body: '{}'}, fetcher);
+    }
+    return id;
   }
   async function email(fetcher) {
     try { return ((await api(`${DRIVE}/about?fields=user(emailAddress)`, {}, fetcher)).user || {}).emailAddress || ''; } catch (e) { return ''; }
@@ -128,7 +147,7 @@
   // tap "Sign in with Google": pick an account, find or make the Sheet
   async function connect(pick, fetcher) {
     await signIn(pick ? 'pick' : 'first');
-    const who = await email(fetcher), id = await findOrMake(fetcher);
+    const who = (PP() || {}).email || await email(fetcher), id = await findOrMake(fetcher);
     setConfig({on: true, email: who, sheetId: id});
     return config();
   }

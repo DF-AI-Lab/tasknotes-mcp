@@ -1,8 +1,8 @@
 /* TaskNotes - the service worker: keeps the app files on the phone so it opens with no internet.
    Bump VERSION with every app version. */
-const VERSION = '1.05';
+const VERSION = '1.06';
 const CACHE = 'tasknotes-' + VERSION;
-const FILES = ['./', 'index.html', 'app.css', 'app.js', 'store.js', 'lock.js', 'vault.js', 'lockui.js', 'sync.js', 'config.js', 'gsheet.js', 'manifest.json', 'icon-192.png', 'icon-512.png', 'icon-maskable-512.png'];
+const FILES = ['./', 'index.html', 'app.css', 'app.js', 'store.js', 'vault.js', 'passport-lock.js', 'passport/config.js', 'passport/google.js', 'passport/passport.js', 'passport/ui.js', 'passport/passport.css', 'passport/theme.json', 'sync.js', 'config.js', 'gsheet.js', 'manifest.json', 'icon-192.png', 'icon-512.png', 'icon-maskable-512.png'];
 
 self.addEventListener('install', e => {
   e.waitUntil((async () => {

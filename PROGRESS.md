@@ -24,6 +24,13 @@
 - [ ] Connect phone + Claude (SETUP.md steps 5-6)
 - [ ] Test on the real phone, then switch to the darrenfawcett1980 Sheet
 
+## v1.06: Passport 🛂
+- The old lock (lock.js + lockui.js) is gone. Passport is the lock now (`docs/passport/`, `docs/passport-lock.js`)
+- Same Google sign-in as Passport. The Sheet lives in **App data - DON'T DELETE / DF…… / Todo** (an old loose Sheet gets moved in)
+- 🔐 Secrets open with the passport passcode (its hidden key). Old Secrets made with the old PIN can't be opened.
+- Settings → 🛂 Passport: change passcode, backup codes, fingerprint
+- Update Passport: copy the new files from DF-AI-Lab/Passport-ID into `docs/passport/` (see PASSPORT.md there)
+
 ## What's built (v0.1.0)
 **App (`docs/`)**
 - Lock: name → 6-digit PIN twice → 10 backup codes → offer fingerprint. PIN pad, 5 wrong = 15 min lock,

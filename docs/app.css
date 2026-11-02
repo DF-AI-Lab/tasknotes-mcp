@@ -20,6 +20,8 @@ html.lockon .app{display:none!important}
 .lock{position:fixed;inset:0;z-index:50;overflow-x:hidden;background:var(--p);display:flex;justify-content:center;overflow-y:auto;
   padding:max(24px,env(safe-area-inset-top)) max(16px,env(safe-area-inset-right)) max(24px,env(safe-area-inset-bottom)) max(16px,env(safe-area-inset-left))}
 html:not(.lockon) .lock{display:none}
+.passport{width:100%;display:flex}
+.lock .ps-screen{margin:auto}
 .lockin{width:100%;max-width:360px;margin:auto;display:flex;flex-direction:column;align-items:center;gap:12px;text-align:center}
 .logo{width:72px;height:72px;border-radius:22px;background:var(--ac);color:var(--on);display:grid;place-items:center;font-weight:800;font-size:26px}
 .lock h1{margin:4px 0 0;font-size:23px}
