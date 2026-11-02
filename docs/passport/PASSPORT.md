@@ -94,4 +94,4 @@ if (!bytes) PassportUI.needKey(() => { bytes = Passport.key(email); openSecrets(
 - If the app must break a rule, write why in `passport-id.md` under "Differences".
 
 ---
-This app has Passport v0.3.2. Update from DF-AI-Lab/Passport-ID.
+This app has Passport v0.3.3. Update from DF-AI-Lab/Passport-ID.

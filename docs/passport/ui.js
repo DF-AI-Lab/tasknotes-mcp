@@ -2,7 +2,7 @@
 // Usage: PassportUI.start({ app: 'wmm', theme, mount: element, onUnlocked })
 
 const PassportUI = (() => {
-  let T, APP, root, onUnlocked, timer;
+  let T, APP, root, onUnlocked, onSignOut, timer;
   let autoFinger = true; // pop fingerprint up by itself once per lock (not again after a cancel or wrong passcode)
   const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
   const first = (name) => esc(String(name || '').split(' ')[0]);
@@ -210,7 +210,7 @@ const PassportUI = (() => {
       ${driveLine(p)}
       <button class="ps-link" id="other">Use another Google account</button>`);
     on('#fg', 'click', backupLogin);
-    on('#other', 'click', () => { Passport.signOut(APP); Passport.setUnlocked(APP, false); welcome(); });
+    on('#other', 'click', signOut);
     const tryFinger = async (quiet) => {
       try { if (await Passport.verifyFingerprint(email, APP)) unlock(); }
       catch { if (!quiet) $('#msg').innerHTML = err('Fingerprint didn\'t work. Use your passcode.'); }
@@ -322,6 +322,14 @@ const PassportUI = (() => {
   }
 
   // settings (where the ID lives)
+  // 🚪 sign out: this app forgets the Google account on this device. The app can tidy up first (onSignOut).
+  async function signOut() {
+    try { if (onSignOut) await onSignOut(); } catch {}
+    Passport.signOut(APP); Passport.setUnlocked(APP, false);
+    if (CLOUD) PassportCloud.signOut();
+    welcome();
+  }
+
   async function settings() {
     const email = Passport.appAccount(APP); const p = Passport.find(email);
     const can = await Passport.fingerprintAvailable();
@@ -333,7 +341,7 @@ const PassportUI = (() => {
         <div><dt>Your passport</dt><dd>${esc(p.id)}</dd></div>
         <div><dt>Name</dt><dd>${esc(p.name)}</dd></div>
         <div><dt>Email</dt><dd>${esc(p.email)}</dd></div>
-        <div><dt>Drive folder</dt><dd>${esc(p.id)} / ${esc(T.drive)}</dd></div>
+        <div><dt>Drive folder</dt><dd>${CLOUD ? esc(PassportCloud.ROOT) + ' / ' : ''}${esc(p.id)} / ${esc(T.drive)}</dd></div>
         <div><dt>Backup codes left</dt><dd>${Passport.backupLeft(p)} of 10</dd></div>
         <div><dt>Fingerprint</dt><dd>${!can ? 'Not on this device' : fp ? 'On' : 'Off'}</dd></div>
         <div><dt>Hidden key</dt><dd>${Passport.key(email) ? 'Open ✓' : 'Locked'}</dd></div>
@@ -346,7 +354,8 @@ const PassportUI = (() => {
       <button class="ps-btn ps-ghost" id="nb">Make new backup codes</button>
       ${onUnlocked ? `<button class="ps-btn" id="back">Back to ${esc(T.name)}</button>` : ''}
       <button class="ps-btn${onUnlocked ? ' ps-ghost' : ''}" id="lock">Lock now</button>
-      <button class="ps-link" id="other">Use another Google account</button>`);
+      <button class="ps-btn ps-ghost" id="out">Sign out</button>
+      <p class="ps-sub ps-center">Sign out to use another Google account. Your passport stays safe in Drive.</p>`);
     on('#sv', 'click', async () => {
       busy($('#sv'), 'Saving…');
       try { await Passport.sync(email, true); settings(); }
@@ -355,7 +364,7 @@ const PassportUI = (() => {
     on('#back', 'click', route);
     on('#cpw', 'click', () => needKey(() => newPasscode(Passport.backupLeft(Passport.find(email))), settings));
     on('#lock', 'click', () => { Passport.setUnlocked(APP, false); login(); });
-    on('#other', 'click', () => { Passport.signOut(APP); Passport.setUnlocked(APP, false); welcome(); });
+    on('#out', 'click', signOut);
     on('#nb', 'click', () => needKey(async () => backupCodes(await Passport.newBackupCodes(email), settings), settings));
     on('#fpt', 'click', async () => {
       if (fp) { Passport.removeFingerprint(email, APP); return settings(); }
@@ -376,7 +385,7 @@ const PassportUI = (() => {
   }
 
   function start(opts) {
-    APP = opts.app; T = opts.theme; root = opts.mount; onUnlocked = opts.onUnlocked;
+    APP = opts.app; T = opts.theme; root = opts.mount; onUnlocked = opts.onUnlocked; onSignOut = opts.onSignOut;
     applyTheme(T);
     route();
   }

@@ -79,6 +79,13 @@ const PassportCloud = (() => {
     const t2 = saved(); t2.email = email; sessionStorage.setItem(TOKEN_KEY, JSON.stringify(t2));
   }
 
+  // forget the Google sign-in on this device (Drive files stay)
+  function signOut() {
+    const t = saved();
+    try { sessionStorage.removeItem(TOKEN_KEY); } catch {}
+    try { if (t && window.google?.accounts?.oauth2) google.accounts.oauth2.revoke(t.token, () => {}); } catch {}
+  }
+
   // ---------- Drive helpers ----------
   const q = (s) => API + '?spaces=drive&fields=files(id,name,parents,modifiedTime)&orderBy=modifiedTime desc&q=' + encodeURIComponent(s);
   const esc = (s) => String(s).replace(/\\/g, '\\\\').replace(/'/g, "\\'");
@@ -128,5 +135,5 @@ const PassportCloud = (() => {
   // each app's own folder: App data - DON'T DELETE/DF123456/WMM etc. Apps save their data in here.
   async function appFolder(passportId, name) { return folder(name, await idFolder(passportId)); }
 
-  return { ROOT, enabled, hasToken, token: () => saved()?.token || '', signIn, ensureToken, pull, push, appFolder };
+  return { ROOT, enabled, hasToken, token: () => saved()?.token || '', signIn, signOut, ensureToken, pull, push, appFolder };
 })();

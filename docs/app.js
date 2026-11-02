@@ -3,7 +3,7 @@
   'use strict';
   const S = window.Store, $ = id => document.getElementById(id);
   // 🏷️ bump these with every change: VERSION for the live app, DEMO_VERSION for the demo
-  const VERSION = '1.09', DEMO_VERSION = '09';
+  const VERSION = '1.10', DEMO_VERSION = '10';
   const DEMO = new URLSearchParams(location.search).has('demo');
   const VER_LABEL = DEMO ? 'demo.v.' + DEMO_VERSION : 'v.' + VERSION;
   const SKEY = DEMO ? 'tn_demo_state_v1' : 'tn_state_v1';
@@ -686,7 +686,16 @@
     app: 'TaskNotes', prefix: 'tn', demo: DEMO,
     name: () => st.settings.name || '',
     setName: n => { st.settings.name = String(n || '').trim().slice(0, 20); save(true); },
-    onEnter
+    onEnter,
+    // 🚪 Passport "Sign out": send what's left to the Sheet, then wipe this phone so the next Google account starts clean
+    onSignOut: async () => {
+      clearTimeout(syncTimer);
+      if (G.on() && S.outboxCount(st)) await syncNow();
+      try { store.removeItem(SKEY); } catch (e) { /* none */ }
+      st = S.starter(); st.secrets = [];
+      vault.key = null; vault.items = [];
+      G.setToken(''); G.setConfig(null);
+    }
   });
   if ('serviceWorker' in navigator && !DEMO && location.protocol === 'https:') navigator.serviceWorker.register('sw.js').catch(() => {});
 })();
