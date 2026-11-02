@@ -21,7 +21,7 @@ const PassportUI = (() => {
       ${small ? '' : `<p class="ps-tag">${esc(T.tagline)}</p>`}
     </header>`;
   }
-  const driveLine = (p) => `<p class="ps-drive">${icon.folder} Saves to Drive: ${p ? esc(p.id) : 'DF……'} / ${esc(T.drive)}</p>`;
+  const driveLine = (p) => `<p class="ps-drive">${icon.folder} Saves to Drive: ${esc(PassportCloud.ROOT)} / ${p ? esc(p.id) : 'DF……'} / ${esc(T.drive)}</p>`;
   const err = (msg) => (msg ? `<p class="ps-err" role="alert">${msg}</p>` : '');
   const passField = (id, label) => `<label class="ps-label" for="${id}">${label}</label>
     <input class="ps-input ps-code" id="${id}" type="password" inputmode="numeric" autocomplete="off" maxlength="6" pattern="[0-9]{6}" placeholder="••••••">`;
