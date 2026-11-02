@@ -2,7 +2,6 @@
 const test = require('node:test');
 const assert = require('node:assert/strict');
 const S = require('../docs/store.js');
-const Lock = require('../docs/lock.js');
 
 const SAT = new Date('2026-10-31T10:00:00');
 
@@ -83,20 +82,6 @@ test('demo data is clean', () => {
   assert.equal(s.tasks.filter(S.pendingDelete).length, 1);
 });
 
-test('shared lock: PIN, backup codes, wrong tries', async () => {
-  assert.match(Lock.pinProblem('123456', '123456'), /too easy/);
-  assert.equal(Lock.pinProblem('482916', '482916'), '');
-  const codes = Lock.makeCodes();
-  const rec = await Lock.create('482916', codes);
-  assert.equal(await Lock.checkPin(rec, '482916'), true);
-  assert.equal(await Lock.checkPin(rec, '000000'), false);
-  assert.equal(await Lock.useCode(rec, codes[3].toUpperCase()), 3);
-  assert.equal(await Lock.findCode(rec, codes[3]), -1);
-  assert.equal(Lock.codesLeft(rec), 9);
-  for (let i = 0; i < 5; i++) Lock.fail(rec, 1000);
-  assert.ok(Lock.lockedUntil(rec, 2000) > 0);
-});
-
 test('🔐 secrets: scrambled, only the right key opens them, and they sync like other rows', async () => {
   const V = require('../docs/vault.js');
   const key = await V.keyFrom(crypto.getRandomValues(new Uint8Array(32)));
@@ -122,10 +107,10 @@ test('🔐 secrets: scrambled, only the right key opens them, and they sync like
   assert.equal(S.outbox(old).secrets.length, 0);
 });
 
-test('🔐 the secrets key comes from the lock, so the same lock gives the same key', async () => {
+test('🔐 the secrets key comes from the passport hidden key, so the same passport gives the same key', async () => {
   const V = require('../docs/vault.js');
-  const rec = await Lock.create('482915', Lock.makeCodes());
-  const mb = () => Uint8Array.from(atob(rec.mb), c => c.charCodeAt(0));
-  const data = await V.seal(await V.keyFrom(mb()), {title: 'PIN for the shed', text: '1066'});
-  assert.equal((await V.open(await V.keyFrom(mb()), data)).text, '1066');
+  const hidden = crypto.getRandomValues(new Uint8Array(32));        // what Passport.key() hands over
+  const data = await V.seal(await V.keyFrom(hidden.slice()), {title: 'PIN for the shed', text: '1066'});
+  assert.equal((await V.open(await V.keyFrom(hidden.slice()), data)).text, '1066');
+  assert.equal(await V.open(await V.keyFrom(crypto.getRandomValues(new Uint8Array(32))), data), null);
 });

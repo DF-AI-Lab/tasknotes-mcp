@@ -3,7 +3,7 @@
   'use strict';
   const S = window.Store, $ = id => document.getElementById(id);
   // 🏷️ bump these with every change: VERSION for the live app, DEMO_VERSION for the demo
-  const VERSION = '1.05', DEMO_VERSION = '05';
+  const VERSION = '1.06', DEMO_VERSION = '06';
   const DEMO = new URLSearchParams(location.search).has('demo');
   const VER_LABEL = DEMO ? 'demo.v.' + DEMO_VERSION : 'v.' + VERSION;
   const SKEY = DEMO ? 'tn_demo_state_v1' : 'tn_state_v1';
@@ -54,7 +54,7 @@
     const subs = {
       day: now.toLocaleDateString('en-GB', {weekday: 'short', day: 'numeric', month: 'short'}) + ' · ' + (planned ? S.fmtMins(planned) + ' planned of ~' + S.fmtMins(dayMins) : todays.length ? todays.length + ' to do' : 'nothing due today'),
       notes: 'Quick thoughts by category', review: 'Notes you flagged to look at again', done: 'Hidden from your day, but kept',
-      secrets: vault.key ? 'Open · locks after 1 min without a tap' : 'Locked · needs your PIN every time'};
+      secrets: vault.key ? 'Open · locks after 1 min without a tap' : 'Locked · needs your passcode every time'};
     let h = `<div class="top"><div><h2>${titles[tab]}</h2><small>${esc(subs[tab])}</small></div>
       <div class="topr">${DEMO ? '' : syncButton()}<div class="mewrap"><button class="av" id="me" aria-label="Settings">${esc(initials())}</button><small class="ver">${VER_LABEL}</small></div></div></div>`;
 
@@ -285,8 +285,7 @@
         <button type="button" id="mcats">🗂️ Categories<span class="sub">${S.cats(st).length} categories · add, rename, colour</span></button>
         ${DEMO ? '' : `<button type="button" id="msync">☁️ Google account<span class="sub">${cloudText()}</span></button>
         <button type="button" id="mfp">👆 Fingerprint<span class="sub">${fp ? '● On for this phone' : window.LockUI.canFinger() ? 'Open with your finger' : 'Not available on this device'}</span></button>
-        <button type="button" id="mpin">🔢 Change PIN<span class="sub">Pick a new 6-digit PIN</span></button>
-        <button type="button" id="mcodes">🔑 New backup codes<span class="sub">${window.LockUI.codesLeft()} of 10 left · the old ones stop working</span></button>
+        <button type="button" id="mpass">🛂 Passport<span class="sub">${esc(window.LockUI.passportId())} · passcode, backup codes (${window.LockUI.codesLeft()} of 10 left)</span></button>
         <button type="button" id="mlock">🔒 Lock now</button>`}
         <button type="button" id="mexport">💾 Download a copy<span class="sub">All tasks and notes as a file</span></button>
         <button type="button" id="mdemo">${DEMO ? '🚪 Leave demo' : '🧪 Try the demo'}<span class="sub">${DEMO ? 'Back to your own data' : 'Fake data, your data is not touched'}</span></button>
@@ -315,8 +314,7 @@
         if (!window.LockUI.canFinger()) return;
         const ok = await window.LockUI.fingerAdd(); toast(ok ? '👆 Fingerprint on' : 'Cancelled. Nothing changed.'); settingsSheet();
       });
-      sh.querySelector('#mpin').addEventListener('click', () => { closeSheet(); window.LockUI.changePin(); });
-      sh.querySelector('#mcodes').addEventListener('click', () => confirmSheet('🔑 Make 10 new backup codes?', 'The old ones stop working.', 'Make new codes', () => window.LockUI.newCodes()));
+      sh.querySelector('#mpass').addEventListener('click', () => { keep(); closeSheet(); window.LockUI.settings(); });
       sh.querySelector('#mlock').addEventListener('click', () => { closeSheet(); lockVault(true); window.LockUI.lockNow(); });
     });
   }
@@ -479,7 +477,7 @@
   }
 
   // ---------- 🔐 secrets ----------
-  // Locked by default. The PIN opens it (every time); the key and the readable list live only in memory.
+  // Locked by default. The passport passcode opens it (every time); the key and the readable list live only in memory.
   // It locks again after 1 minute without a tap, when you leave the tab, or when the app goes to the background.
   const vault = {key: null, items: [], at: 0, busy: false, open: new Set()};   // open = cards showing their text
   const liveSecrets = () => st.secrets.filter(live);
@@ -504,7 +502,7 @@
     const n = liveSecrets().length;
     if (!vault.key) {
       return `<div class="vault"><div class="vicon">🔐</div><b>${n} secret${n === 1 ? '' : 's'} locked away</b>
-        <small id="vmsg">${DEMO ? 'Demo PIN: ' + Vault.DEMO_PIN : 'Type your PIN to open'}</small><div id="vpad" class="vpad"></div></div>`;
+        <small id="vmsg">${DEMO ? 'Demo PIN: ' + Vault.DEMO_PIN : 'Type your passcode to open'}</small><div id="vpad" class="vpad"></div></div>`;
     }
     let h = `<div class="vbar"><button class="btn p" data-vadd="1" type="button">＋ New secret</button><button class="btn" data-vlock="1" type="button">🔒 Lock</button></div>`;
     h += `<h3 class="sec"><span>${vault.items.length} secret${vault.items.length === 1 ? '' : 's'}</span></h3>`;
@@ -513,7 +511,7 @@
         <div class="sh"><button class="stog" data-vtog="${esc(it.id)}" type="button" aria-expanded="${on}"><i>${on ? '▾' : '▸'}</i><b>${esc(it.title)}</b></button>${it.bad ? '' : `<button class="mini" data-vcopy="${esc(it.id)}" type="button">📋 Copy</button>`}<button class="mini" data-vedit="${esc(it.id)}" type="button">${it.bad ? '🗑️' : '✏️'}</button></div>
         ${on && it.text ? `<div class="stx">${esc(it.text)}</div>` : ''}</div>`; }).join('')
       : '<div class="empty">Nothing here yet. Tap ＋ New secret 👆</div>';
-    h += '<p class="small vfoot">Scrambled with your PIN before it leaves the phone. The Sheet and Claude only see gibberish.</p>';
+    h += '<p class="small vfoot">Scrambled with your passport\'s hidden key before it leaves the phone. The Sheet and Claude only see gibberish.</p>';
     return h;
   }
   function vaultPad() {

@@ -1,0 +1,26 @@
+{
+  "name": "TaskNotes",
+  "tagline": "Tasks and notes, on your phone.",
+  "button": "Open my notes",
+  "drive": "Todo",
+  "font": "Manrope",
+  "fontUrl": "https://fonts.googleapis.com/css2?family=Manrope:wght@400;600;700;800&display=swap",
+  "align": "center",
+  "logo": {
+    "type": "text",
+    "value": "TN"
+  },
+  "colors": {
+    "bg": "#0f1622",
+    "text": "#e8eef6",
+    "muted": "#8d9bb0",
+    "accent": "#6ea0ff",
+    "accentText": "#0f1622",
+    "field": "#18212f",
+    "fieldBorder": "#2a3548",
+    "link": "#8FB5FF",
+    "error": "#FF8A80",
+    "tile": "#6ea0ff",
+    "tileText": "#0f1622"
+  }
+}
