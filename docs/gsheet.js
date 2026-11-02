@@ -66,6 +66,7 @@
   const PC = () => typeof PassportCloud !== 'undefined' && PassportCloud.enabled ? PassportCloud : null;
   const PP = () => PC() && typeof Passport !== 'undefined' ? Passport.find(Passport.appAccount('tasknotes')) : null;
   function token() {
+    if (PP()) return PC().token();                   // with a passport: only the passport's Google sign-in
     try { const t = JSON.parse(ss.getItem(TOK)); if (t && t.exp > Date.now() + 60000) return t.t; } catch (e) { /* none */ }
     return (PC() && PC().token()) || '';
   }
@@ -122,7 +123,7 @@
   // find "TaskNotes Data" in your Drive (only files this app made are visible), or make it.
   // With a passport it lives in: App data - DON'T DELETE / DF…… / Todo (moved there if it was loose in My Drive)
   async function findOrMake(fetcher) {
-    const pp = PP(), home = pp ? await PC().appFolder(pp.id, 'Todo') : '';
+    const pp = PP(), home = pp ? await homeOf(pp) : '';
     const q = encodeURIComponent(`name='${NAME}' and mimeType='${SHEET_TYPE}' and trashed=false`);
     const list = await api(`${DRIVE}/files?q=${q}&orderBy=createdTime&fields=files(id,name,parents)`, {}, fetcher);
     const files = (list.files || []).filter(x => x.name === NAME);
@@ -141,9 +142,13 @@
     return id;
   }
   // the Sheet from before Passport: move it into App data - DON'T DELETE / DF…… / Todo (once)
+  async function homeOf(pp) {
+    try { return await PC().appFolder(pp.id, 'Todo'); }
+    catch (e) { if (e.message !== 'signed_out') throw e; const x = new Error('Tap anywhere to reconnect Google.'); x.needTap = true; throw x; }
+  }
   async function place(id, fetcher) {
     const pp = PP(); if (!pp || config().home === pp.id) return id;
-    const home = await PC().appFolder(pp.id, 'Todo');
+    const home = await homeOf(pp);
     let f;
     try { f = await api(`${DRIVE}/files/${id}?fields=id,parents,trashed`, {}, fetcher); } catch (e) { if (e.status !== 404) throw e; }
     if (!f || f.trashed) id = await findOrMake(fetcher);
