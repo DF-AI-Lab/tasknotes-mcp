@@ -4,8 +4,8 @@ main = "src/index.js"
 compatibility_date = "2025-06-01"
 
 [vars]
-# the Google Sheet id (the long part of its address). Test sheet: TaskNotes Data (mock)
-SHEET_ID = "1CmMYDzu4nEv-Es1Q0HVY7Q63nvk_rwwDNPVdhr9AJUQ"
+# the Google Sheet id (the long part of its address). Real sheet: App data - DON'T DELETE / DF… / Todo / TaskNotes Data
+SHEET_ID = "1DWyOafjRC4NPYyBOZdiGfQyIcergwcB-dGUpFnEHLi8"
 TZ = "Europe/London"
 APP_ORIGIN = "https://df-ai-lab.github.io"
 
