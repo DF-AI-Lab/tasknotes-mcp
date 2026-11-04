@@ -17,10 +17,23 @@ jobs:
           node-version: 22
       - name: Worker tests
         run: node --test worker/test/*.test.js
+      # Pasted secrets often carry a stray space or line break. Strip them, and show the
+      # length and line count only (never the value) so a bad paste is easy to spot.
+      - name: Clean Cloudflare secrets
+        env:
+          T: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          A: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: |
+          echo "Token: $(printf '%s' "$T" | wc -l) line breaks before cleaning"
+          t=$(printf '%s' "$T" | tr -d '[:space:]'); a=$(printf '%s' "$A" | tr -d '[:space:]')
+          echo "::add-mask::$t"
+          echo "Token length after cleaning: ${#t}. Account ID length: ${#a} (should be 32)"
+          echo "CF_TOKEN=$t" >> "$GITHUB_ENV"
+          echo "CF_ACCOUNT=$a" >> "$GITHUB_ENV"
       - uses: cloudflare/wrangler-action@v3
         with:
-          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
-          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          apiToken: ${{ env.CF_TOKEN }}
+          accountId: ${{ env.CF_ACCOUNT }}
           workingDirectory: worker
           secrets: |
             GOOGLE_SERVICE_ACCOUNT
