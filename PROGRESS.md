@@ -93,6 +93,13 @@
   quick-add box (Task/Note toggle), bottom nav Day / Notes / Review / Done, undo toast.
 
 ## Next step
+**4 Nov 2026 – deploy in progress (branch `claude/jolly-wozniak-511lt5`)**
+- Done: Pages live, robot `tasknotes-robot@passport-513517` (Passport project) shared on the real Sheet,
+  `SHEET_ID` switched to the real Sheet, Cloudflare = df.ai.lab.hq account, 6 GitHub secrets added
+- Deploy run 3 failed: `CLOUDFLARE_ACCOUNT_ID` came through **empty**, and the API token was refused (code 9106)
+- To do: re-check both secrets (name spelling, value pasted), maybe make a fresh token, run Deploy Worker on this branch
+- Then merge to main, connect phone (step 5) + Claude (step 6)
+
 Darren follows SETUP.md (Pages → Google robot → Cloudflare → connect phone and Claude), then tests on the phone.
 
 ## Reference: WMM Lite (the pattern to copy)
