@@ -110,7 +110,13 @@
   quick-add box (Task/Note toggle), bottom nav Day / Notes / Review / Done, undo toast.
 
 ## Next step
-Change MCP_PIN to a strong one + redeploy. Merge the jolly-wozniak deploy fixes into main. Maybe: repeating tasks.
+Change MCP_PIN to a strong one + redeploy.
+
+### 📋 Next session list (Darren, 7 Nov)
+1. **Full merge** of `claude/jolly-wozniak-511lt5` into main (deploy fixes + real SHEET_ID)
+2. **Edit categories**: Darren wants to edit them (ask what's missing: rename / emoji / colour / delete / order?)
+3. **No timer lock on the app**: the app should NOT lock after idle. Only the 🔐 Secrets tab keeps its timer
+4. Maybe: repeating tasks (IDEAS.md)
 
 ## Reference: WMM Lite (the pattern to copy)
 - Repo: DF-AI-Lab/wheres-my-money-lite, live branch `claude/elegant-davinci-h39d2r`, site in `docs/`
