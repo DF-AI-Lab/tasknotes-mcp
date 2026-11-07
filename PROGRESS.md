@@ -115,6 +115,7 @@ Change MCP_PIN to a strong one + redeploy.
 1. ~~**Full merge** of `claude/jolly-wozniak-511lt5` into main~~ ✅ done 7 Nov (deploy fixes + real SHEET_ID now on main)
 2. ~~**Edit categories**~~ ✅ v1.12: ⋯ on each tile → Edit / Tick off all / Delete (asks first, 10 sec undo)
    - ✅ v1.13: opens straight in (no passcode unless 🔒 Lock now / Sign out) + Google 1-hour sign-in survives closing the app. Google still needs a quick re-tap after each hour (fix idea: sync through the Worker instead).
+   - ✅ v1.14: 📱 Invite a friend (Settings): QR + Copy link + Share. Friends get their OWN TaskNotes. Google app is still in Testing = add each friend as a test user (or Publish app).
 3. ~~**No timer lock on the app**~~ ✅ v1.11: sign in once, stays open (flag `tasknotes-stay-in` in passport-lock.js). Only 🔒 Lock now / Sign out ask again. Secrets unchanged
 4. Maybe: repeating tasks (IDEAS.md)
 
