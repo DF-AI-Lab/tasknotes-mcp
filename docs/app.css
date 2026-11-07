@@ -75,7 +75,11 @@ textarea.inp{min-height:90px;resize:vertical}
 .tile{border:0;border-radius:18px;padding:12px 13px;color:#fff;min-height:78px;display:flex;flex-direction:column;justify-content:space-between;text-align:left;transition:transform .12s,opacity .2s,box-shadow .2s;min-width:0}
 .tile b{font-size:16px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.tile small{opacity:.92;font-size:12px}
 .tile:active{transform:scale(.97)}
-.grid.filtering .tile:not(.sel){opacity:.4}
+.tw{position:relative;display:flex;min-width:0}.tw .tile{flex:1;padding-right:40px}
+.tdots{position:absolute;top:6px;right:6px;width:34px;height:34px;border:0;border-radius:10px;background:rgba(0,0,0,.18);color:#fff;font-size:20px;line-height:1;font-weight:700}
+.tdots:active{background:rgba(0,0,0,.32)}
+.menu button:disabled{opacity:.5}
+.grid.filtering .tile:not(.sel),.grid.filtering .tw:has(.tile:not(.sel)) .tdots{opacity:.4}
 .tile.sel{box-shadow:0 0 0 3px var(--p),0 0 0 5px var(--t)}
 .tile.addc{background:var(--k);color:var(--m);border:1px dashed var(--ln);align-items:center;justify-content:center;font-weight:700}
 h3.sec{margin:18px 18px 4px;font:500 11px var(--mono);color:var(--ac);text-transform:uppercase;letter-spacing:.08em;display:flex;justify-content:space-between;align-items:center}

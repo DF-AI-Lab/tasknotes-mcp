@@ -3,7 +3,7 @@
   'use strict';
   const S = window.Store, $ = id => document.getElementById(id);
   // 🏷️ bump these with every change: VERSION for the live app, DEMO_VERSION for the demo
-  const VERSION = '1.11', DEMO_VERSION = '11';
+  const VERSION = '1.12', DEMO_VERSION = '12';
   const DEMO = new URLSearchParams(location.search).has('demo');
   const VER_LABEL = DEMO ? 'demo.v.' + DEMO_VERSION : 'v.' + VERSION;
   const SKEY = DEMO ? 'tn_demo_state_v1' : 'tn_state_v1';
@@ -124,7 +124,7 @@
     return `<div class="grid${filter ? ' filtering' : ''}">${cs.map(c => {
       const nt = st.tasks.filter(t => live(t) && !t.done && t.category === c.name).length;
       const nn = st.notes.filter(n => live(n) && n.category === c.name).length;
-      return `<button class="tile${filter === c.name ? ' sel' : ''}" data-cat="${esc(c.name)}" style="background:${col(c.colour)}"><b>${esc(c.emoji)} ${esc(c.name)}</b><small>${nt} task${nt === 1 ? '' : 's'}${nn ? ' · ' + nn + ' note' + (nn === 1 ? '' : 's') : ''}</small></button>`;
+      return `<div class="tw"><button class="tile${filter === c.name ? ' sel' : ''}" data-cat="${esc(c.name)}" style="background:${col(c.colour)}"><b>${esc(c.emoji)} ${esc(c.name)}</b><small>${nt} task${nt === 1 ? '' : 's'}${nn ? ' · ' + nn + ' note' + (nn === 1 ? '' : 's') : ''}</small></button><button class="tdots" data-catmenu="${esc(c.name)}" aria-label="Options for ${esc(c.name)}">⋯</button></div>`;
     }).join('')}${cs.length % 2 ? '<button class="tile addc" data-addcat="1">＋ Category</button>' : ''}</div>`;
   }
   function item(t) {
@@ -149,6 +149,7 @@
     if (d.clr) { filter = null; render(); return; }
     if (d.tab2) { tab = d.tab2; render(); $('scroll').scrollTop = 0; return; }
     if (d.addcat) { catSheet(null); return; }
+    if (d.catmenu) { catMenu(d.catmenu); return; }
     if (d.tick) {
       const t = S.tick(st, d.tick); save(); render();
       toast(t.done ? '✅ Done: ' + t.title : 'Moved back to your list', () => { S.tick(st, t.id); save(); render(); });
@@ -204,9 +205,9 @@
 
   // ---------- toast ----------
   let tt = 0, undoFn = null;
-  function toast(msg, undo) {
+  function toast(msg, undo, ms) {
     $('tmsg').textContent = msg; undoFn = undo || null; $('undo').hidden = !undo;
-    $('toast').classList.add('show'); clearTimeout(tt); tt = setTimeout(() => $('toast').classList.remove('show'), 3500);
+    $('toast').classList.add('show'); clearTimeout(tt); tt = setTimeout(() => $('toast').classList.remove('show'), ms || 3500);
   }
   $('undo').addEventListener('click', () => { if (undoFn) undoFn(); undoFn = null; $('toast').classList.remove('show'); });
 
@@ -322,6 +323,42 @@
     openSheet(`<h2>${esc(title)}</h2><p class="small">${esc(text)}</p><div class="btns"><button class="btn" id="cno" type="button">Cancel</button><button class="btn ${bad ? 'bad' : 'p'}" id="cyes" type="button">${esc(yes)}</button></div>`, sh => {
       sh.querySelector('#cno').addEventListener('click', closeSheet);
       sh.querySelector('#cyes').addEventListener('click', () => { closeSheet(); fn(); });
+    });
+  }
+  // ⋯ on a category tile: edit, tick off all, delete (both ask first, then 10 seconds to undo)
+  function catMenu(name) {
+    const c = S.cat(st, name);
+    if (!c) return;
+    const open = st.tasks.filter(t => live(t) && !t.done && t.category === name);
+    openSheet(`<h2>${esc(c.emoji)} ${esc(name)}</h2><div class="menu">
+      <button type="button" id="kedit">✏️ Edit<span class="sub">Name, icon, colour</span></button>
+      <button type="button" id="kall"${open.length ? '' : ' disabled'}>✅ Tick off all<span class="sub">${open.length ? open.length + ' open task' + (open.length === 1 ? '' : 's') : 'Nothing to tick off'}</span></button>
+      <button type="button" id="kdel">🗑️ Delete category<span class="sub">Its tasks and notes move to another category</span></button>
+      </div><button class="btn" id="kback" type="button">Cancel</button>`, sh => {
+      sh.querySelector('#kback').addEventListener('click', closeSheet);
+      sh.querySelector('#kedit').addEventListener('click', () => catSheet(name));
+      sh.querySelector('#kall').addEventListener('click', () => {
+        if (!open.length) return;
+        confirmSheet('Tick off all of ' + name + '?', open.length + ' task' + (open.length === 1 ? '' : 's') + ' will be marked done. You get 10 seconds to undo.', 'Tick off all', () => {
+          const ids = open.map(t => t.id);
+          ids.forEach(id => S.tick(st, id, true)); save(); render();
+          toast('✅ ' + ids.length + ' ticked off in ' + name, () => { ids.forEach(id => S.tick(st, id, false)); save(); render(); }, 10000);
+        });
+      });
+      sh.querySelector('#kdel').addEventListener('click', () => {
+        if (S.cats(st).length <= 1) { toast('You need at least one category.'); return; }
+        const to = S.cats(st).find(x => x.name !== name).name;
+        confirmSheet('Delete ' + name + '?', 'Its tasks and notes move to ' + to + '. You get 10 seconds to undo.', 'Delete', () => {
+          const moved = st.tasks.map(r => ['tasks', r]).concat(st.notes.map(r => ['notes', r])).filter(([, r]) => r.category === name).map(([k, r]) => [k, r.id]);
+          const keep = {emoji: c.emoji, colour: c.colour};
+          S.removeCat(st, name); if (filter === name) filter = null; save(); render();
+          toast('🗑️ Deleted ' + name, () => {
+            S.addCat(st, name, keep.emoji, keep.colour);
+            moved.forEach(([k, id]) => S.edit(st, k, id, {category: name}));
+            save(); render();
+          }, 10000);
+        }, true);
+      });
     });
   }
   function catsSheet() {

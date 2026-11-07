@@ -1,1 +1,1 @@
-{"version":"1.11","demo":"11","notes":"Stays signed in: no more 5 minute lock. Only Secrets asks for the passcode."}
+{"version":"1.12","demo":"12","notes":"⋯ on each category: edit, tick off all, delete (with 10 second undo)"}
