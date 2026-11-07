@@ -3,7 +3,7 @@
   'use strict';
   const S = window.Store, $ = id => document.getElementById(id);
   // 🏷️ bump these with every change: VERSION for the live app, DEMO_VERSION for the demo
-  const VERSION = '1.13', DEMO_VERSION = '13';
+  const VERSION = '1.14', DEMO_VERSION = '14';
   const DEMO = new URLSearchParams(location.search).has('demo');
   const VER_LABEL = DEMO ? 'demo.v.' + DEMO_VERSION : 'v.' + VERSION;
   const SKEY = DEMO ? 'tn_demo_state_v1' : 'tn_state_v1';
@@ -288,6 +288,7 @@
         <button type="button" id="mfp">👆 Fingerprint<span class="sub">${fp ? '● On for this phone' : window.LockUI.canFinger() ? 'Open with your finger' : 'Not available on this device'}</span></button>
         <button type="button" id="mpass">🛂 Passport<span class="sub">${esc(window.LockUI.passportId())} · passcode, backup codes (${window.LockUI.codesLeft()} of 10 left)</span></button>
         <button type="button" id="mlock">🔒 Lock now</button>`}
+        <button type="button" id="minvite">📱 Invite a friend<span class="sub">QR code + link to get their own TaskNotes</span></button>
         <button type="button" id="mexport">💾 Download a copy<span class="sub">All tasks and notes as a file</span></button>
         <button type="button" id="mdemo">${DEMO ? '🚪 Leave demo' : '🧪 Try the demo'}<span class="sub">${DEMO ? 'Back to your own data' : 'Fake data, your data is not touched'}</span></button>
       </div>
@@ -302,6 +303,7 @@
       };
       sh.querySelector('#sdone').addEventListener('click', () => { keep(); closeSheet(); });
       sh.querySelector('#mcats').addEventListener('click', () => { keep(); catsSheet(); });
+      sh.querySelector('#minvite').addEventListener('click', () => { keep(); inviteSheet(); });
       sh.querySelector('#mexport').addEventListener('click', () => {
         const blob = new Blob([JSON.stringify({app: 'TaskNotes', at: new Date().toISOString(), tasks: st.tasks, notes: st.notes, categories: st.cats}, null, 1)], {type: 'application/json'});
         const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = 'tasknotes-' + S.ymd(today()) + '.json'; a.click();
@@ -317,6 +319,23 @@
       });
       sh.querySelector('#mpass').addEventListener('click', () => { keep(); closeSheet(); window.LockUI.settings(); });
       sh.querySelector('#mlock').addEventListener('click', () => { closeSheet(); lockVault(true); window.LockUI.lockNow(); });
+    });
+  }
+  // 📱 Invite: a friend scans the QR (or gets the link) and installs their OWN TaskNotes. Only the link, never your data.
+  const APP_URL = 'https://df-ai-lab.github.io/tasknotes-mcp/';
+  function inviteSheet() {
+    openSheet(`<h2>📱 Invite a friend</h2>
+      <p class="small">Let a friend scan this with their phone camera. They get their own TaskNotes, with their own passport and tasks. It holds the link only, never your data.</p>
+      <img class="qr" src="invite-qr.svg" alt="QR code for the TaskNotes link" width="220" height="220">
+      <p class="invlink">${APP_URL}</p>
+      <div class="btns"><button class="btn" id="icopy" type="button">📋 Copy link</button>${navigator.share ? '<button class="btn p" id="ishare" type="button">📤 Share</button>' : ''}</div>
+      <button class="btn" id="iback" type="button">‹ Back</button>`, sh => {
+      sh.querySelector('#iback').addEventListener('click', settingsSheet);
+      sh.querySelector('#icopy').addEventListener('click', async () => {
+        try { await navigator.clipboard.writeText(APP_URL); toast('📋 Link copied'); } catch (e) { toast('Copy did not work. Hold the link to copy it.'); }
+      });
+      const sb = sh.querySelector('#ishare');
+      if (sb) sb.addEventListener('click', () => navigator.share({title: 'TaskNotes', text: 'Your day, tasks and notes in one simple app', url: APP_URL}).catch(() => {}));
     });
   }
   function confirmSheet(title, text, yes, fn, bad) {

@@ -204,3 +204,5 @@ h3.sec button{background:none;border:0;color:var(--m);font:500 11px var(--mono);
 .gsteps{display:grid;gap:8px;background:var(--k);border:1px solid var(--ln);border-radius:14px;padding:12px 14px;color:inherit;font-size:14px}
 .gsteps ol{margin:0;padding-left:20px;display:grid;gap:4px}
 .gsteps .btn{display:block;text-align:center;text-decoration:none}
+.qr{display:block;margin:14px auto 8px;width:220px;height:220px;background:#fff;border-radius:14px;padding:8px}
+.invlink{text-align:center;word-break:break-all;font-size:.9rem;opacity:.8;margin:0 0 12px}
