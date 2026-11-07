@@ -3,7 +3,7 @@
   'use strict';
   const S = window.Store, $ = id => document.getElementById(id);
   // 🏷️ bump these with every change: VERSION for the live app, DEMO_VERSION for the demo
-  const VERSION = '1.16', DEMO_VERSION = '16';
+  const VERSION = '1.17', DEMO_VERSION = '17';
   const DEMO = new URLSearchParams(location.search).has('demo');
   const VER_LABEL = DEMO ? 'demo.v.' + DEMO_VERSION : 'v.' + VERSION;
   const SKEY = DEMO ? 'tn_demo_state_v1' : 'tn_state_v1';
@@ -127,11 +127,19 @@
       return `<div class="tw"><button class="tile${filter === c.name ? ' sel' : ''}" data-cat="${esc(c.name)}" style="background:${col(c.colour)}"><b>${c.important ? '⭐ ' : ''}${esc(c.emoji)} ${esc(c.name)}</b><small>${nt} task${nt === 1 ? '' : 's'}${nn ? ' · ' + nn + ' note' + (nn === 1 ? '' : 's') : ''}</small></button><button class="tdots" data-catmenu="${esc(c.name)}" aria-label="Options for ${esc(c.name)}">⋯</button></div>`;
     }).join('')}${cs.length % 2 ? '<button class="tile addc" data-addcat="1">＋ Category</button>' : ''}</div>`;
   }
+  // v1.17: task card. Notes show 2 lines; tap the card to open it (one at a time), tap again to close.
+  // ⭐ on the right stars it, ⋯ opens Edit / move / delete.
+  let openTask = null;
   function item(t) {
-    const c = catOf(t.category), late = t.due && !t.done && t.due < S.ymd(today());
-    return `<div class="item${t.done ? ' done' : ''}"><button class="chk" data-tick="${esc(t.id)}" aria-label="${t.done ? 'Not done' : 'Done'}: ${esc(t.title)}">${t.done ? '✓' : ''}</button>
-      <button class="body" data-edit="tasks:${esc(t.id)}"><div class="t">${S.isImportant(st, t) ? '<span class="star" aria-label="important">⭐</span> ' : ''}${esc(t.title)}${t.details ? ' <span class="has-notes" aria-label="has notes">📝</span>' : ''}</div><div class="s${late ? ' late' : ''}"><span class="pill" style="background:${col(c.colour)}">${esc(c.name)}</span>${esc(t.done ? 'done ' + new Date(t.done_at || t.updated).toLocaleDateString('en-GB', {day: 'numeric', month: 'short'}) : S.dueLabel(t.due, today()))}</div></button>
-      <span class="time">${S.fmtMins(t.estimate_mins)}</span></div>`;
+    const c = catOf(t.category), td = S.ymd(today()), late = t.due && !t.done && t.due < td;
+    const imp = S.isImportant(st, t), own = !!t.important, open = openTask === t.id && t.details;
+    const dueCls = t.done ? '' : late ? ' late' : t.due === td ? ' today' : '';
+    const dueTxt = t.done ? 'done ' + new Date(t.done_at || t.updated).toLocaleDateString('en-GB', {day: 'numeric', month: 'short'}) : S.dueLabel(t.due, today());
+    return `<div class="item card${t.done ? ' done' : ''}${open ? ' open' : ''}${imp ? ' imp' : ''}"><button class="chk" data-tick="${esc(t.id)}" aria-label="${t.done ? 'Not done' : 'Done'}: ${esc(t.title)}">${t.done ? '✓' : ''}</button>
+      <button class="body" data-open="${esc(t.id)}" aria-expanded="${t.details ? String(!!open) : 'false'}"><div class="t">${esc(t.title)}</div>
+        <div class="meta"><span class="pill" style="background:${col(c.colour)}">${esc(c.name)}</span><span class="dp${dueCls}">${esc(dueTxt)}</span>${t.estimate_mins ? `<span class="tp">⏱ ${esc(S.fmtMins(t.estimate_mins))}</span>` : ''}</div>
+        ${t.details ? `<div class="nt">${esc(t.details)}</div>` : ''}</button>
+      <div class="acts"><button class="stb${own ? ' on' : ''}" data-star="${esc(t.id)}" aria-pressed="${own}" aria-label="${own ? 'Important, tap to clear' : 'Mark important'}" title="${imp && !own ? 'Important because of its category' : ''}">${imp ? '⭐' : '☆'}</button><button class="tdot" data-tmenu="${esc(t.id)}" aria-label="More for ${esc(t.title)}">⋯</button></div></div>`;
   }
   function note(n) {
     const c = catOf(n.category);
@@ -161,6 +169,17 @@
       return;
     }
     if (d.edit) { const [k, id] = d.edit.split(':'); editSheet(k, id); return; }
+    if (d.open) {
+      const t = S.find(st, 'tasks', d.open);
+      if (t && !t.details) { editSheet('tasks', t.id); return; }    // nothing to open: go straight to edit
+      openTask = openTask === d.open ? null : d.open; render(); return;
+    }
+    if (d.star) {
+      const t = S.star(st, 'tasks', d.star); save(); render();
+      toast(t.important ? '⭐ Important' : 'Star taken off', () => { S.star(st, 'tasks', t.id); save(); render(); });
+      return;
+    }
+    if (d.tmenu) { taskMenu(d.tmenu); return; }
     if (d.undel) { const [k, id] = d.undel.split(':'); S.undelete(st, k, id); save(); render(); toast('Kept 👍'); return; }
     if (d.okdel) { const [k, id] = d.okdel.split(':'); S.confirmDelete(st, k, id); save(); render(); toast('🗑️ Deleted', () => { S.undelete(st, k, id); save(); render(); }); return; }
     if (d.vadd) { secretSheet(null); return; }
@@ -385,6 +404,27 @@
     });
   }
   // ⋯ on a category tile: edit, tick off all, delete (both ask first, then 10 seconds to undo)
+  function taskMenu(id) {
+    const t = S.find(st, 'tasks', id);
+    if (!t) return;
+    const d = n => S.ymd(S.addDays(today(), n));
+    const move = (due, label) => { const was = t.due; S.edit(st, 'tasks', id, {due}); save(); closeSheet(); render(); toast('📅 Moved to ' + label, () => { S.edit(st, 'tasks', id, {due: was}); save(); render(); }); };
+    openSheet(`<h2>${esc(t.title)}</h2><div class="menu">
+      <button type="button" id="medit">✏️ Edit<span class="sub">Title, category, date, time, notes</span></button>
+      <button type="button" id="mtom">📅 Move to tomorrow</button>
+      <button type="button" id="mwk">📅 Move to next week</button>
+      <button type="button" id="mdone">${t.done ? '↩️ Not done' : '✅ Tick off'}</button>
+      <button type="button" id="mdel">🗑️ Delete<span class="sub">You get a few seconds to undo</span></button>
+      </div><button class="btn" id="mback" type="button">Cancel</button>`, sh => {
+      const q = x => sh.querySelector(x);
+      q('#mback').addEventListener('click', closeSheet);
+      q('#medit').addEventListener('click', () => editSheet('tasks', id));
+      q('#mtom').addEventListener('click', () => move(d(1), 'tomorrow'));
+      q('#mwk').addEventListener('click', () => move(d(7), 'next week'));
+      q('#mdone').addEventListener('click', () => { const r = S.tick(st, id); save(); closeSheet(); render(); toast(r.done ? '✅ Done: ' + r.title : 'Moved back to your list', () => { S.tick(st, id); save(); render(); }); });
+      q('#mdel').addEventListener('click', () => del('tasks', id, t.title));
+    });
+  }
   function catMenu(name) {
     const c = S.cat(st, name);
     if (!c) return;

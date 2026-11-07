@@ -229,3 +229,22 @@ h3.sec button{background:none;border:0;color:var(--m);font:500 11px var(--mono);
 .star{font-size:.85em}
 .ts-star{background:none;border:1px solid var(--ln);border-radius:14px;padding:10px 14px;font-size:16px;color:var(--m)}
 .ts-star.on{border-color:var(--ac)}
+
+/* v1.17 task cards */
+.item.card{margin:6px 14px;padding:11px 8px 11px 12px;grid-template-columns:26px 1fr auto;align-items:start;background:var(--k);border:1px solid var(--ln);border-left:3px solid var(--ln);border-radius:14px}
+.item.card.imp{border-left-color:#f5c542}
+.item.card .chk{margin-top:1px}
+.item.card .body{min-width:0}
+.meta{display:flex;flex-wrap:wrap;gap:5px;margin-top:5px;align-items:center}
+.meta .pill{margin:0}
+.dp,.tp{font-size:11.5px;font-weight:700;padding:1px 8px;border-radius:99px;background:var(--k2);color:var(--m)}
+.dp.today{background:#f5c542;color:#1a1400}
+.dp.late{background:var(--bad);color:#fff}
+.tp{color:var(--ac)}
+.nt{color:var(--m);font-size:13px;margin-top:6px;white-space:pre-line;overflow-wrap:anywhere;display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:2;line-clamp:2;overflow:hidden}
+.item.card.open .nt{display:block;-webkit-line-clamp:unset;line-clamp:unset}
+.item.card.open{border-color:var(--ac)}
+.acts{display:flex;gap:2px;align-items:center}
+.stb,.tdot{background:none;border:0;min-width:34px;height:34px;border-radius:10px;font-size:17px;color:var(--m);padding:0}
+.tdot{font-size:20px;font-weight:800}
+.stb:active,.tdot:active{background:var(--k2)}

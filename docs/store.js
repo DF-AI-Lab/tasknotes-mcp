@@ -242,6 +242,8 @@
      ['Ask about Friday rota', 'Work', true], ['Stretch after runs', 'Health', false]]
       .forEach(([text, category, review_later]) => addNote(s, {text, category, review_later}));
     star(s, 'cats', 'AI Lab', true);
+    s.tasks.find(x => x.title === 'Book MOT').details = 'Garage on Main St. Ring before 10am, ask for the Saturday slot. Bring the V5 and last year\'s certificate.';
+    s.tasks.find(x => x.title === "Reply to Sam's email").details = 'Say yes to Thursday';
     star(s, 'tasks', s.tasks.find(x => x.title === 'Send invoice').id, true);
     const t = addTask(s, {title: 'Old test task', category: 'Work', due: d(-5), estimate_mins: 10});
     remove(s, 'tasks', t.id, 'claude');

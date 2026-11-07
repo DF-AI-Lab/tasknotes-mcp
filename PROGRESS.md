@@ -35,6 +35,13 @@
 - MCP_PIN = only for connecting Claude once. Changing it later does NOT sign Claude out (TOKEN_SECRET does).
 - Claude asks permission once per tool (12 tools). Settings → Connectors → TaskNotes to set "Always allow" for all.
 
+## 🗂️ v1.17: task cards (7 Nov 2026)
+- Each task is a card: title, category / date / time pills, notes cut to 2 lines
+- Tap a card with notes = open it (full notes), tap again = close. Only one open at a time.
+  A card with no notes opens Edit straight away
+- Right side: ⭐ (tap to star / unstar) and ⋯ menu: Edit, Move to tomorrow, Move to next week, Tick off, Delete
+- Important cards get a gold edge on the left
+
 ## ⭐ v1.16 / Worker 0.3.0: Important (7 Nov 2026, asked by Orbit)
 - Star a **task** (☆ button next to 🗑️ in the task sheet), a **note** (⭐ Important chip) or a whole **category** (⋯ → ⭐ Mark important)
 - A task/note counts as important if it has its own ⭐ **or** its category has one
