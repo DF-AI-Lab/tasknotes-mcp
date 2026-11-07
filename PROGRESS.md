@@ -116,8 +116,18 @@ Change MCP_PIN to a strong one + redeploy.
 2. ~~**Edit categories**~~ ✅ v1.12: ⋯ on each tile → Edit / Tick off all / Delete (asks first, 10 sec undo)
    - ✅ v1.13: opens straight in (no passcode unless 🔒 Lock now / Sign out) + Google 1-hour sign-in survives closing the app. Google still needs a quick re-tap after each hour (fix idea: sync through the Worker instead).
    - ✅ v1.14: 📱 Invite a friend (Settings): QR + Copy link + Share. Friends get their OWN TaskNotes. Google app is still in Testing = add each friend as a test user (or Publish app).
-3. ~~**No timer lock on the app**~~ ✅ v1.11: sign in once, stays open (flag `tasknotes-stay-in` in passport-lock.js). Only 🔒 Lock now / Sign out ask again. Secrets unchanged
+3. ~~**No timer lock on the app**~~ ✅ v1.11/v1.13: opens straight in (v1.13 flag `tasknotes-locked`, set only by Lock now / Sign out). Secrets unchanged
 4. Maybe: repeating tasks (IDEAS.md)
+
+### 📋 Next session list (Darren, 7 Nov evening) — live = v1.14 on main
+- **Linking devices:** NOT needed as WMM's Main/invite. Same Google = same passport = same Sheet. TaskNotes merges row by row
+  (newest `updated` wins, only changed rows sent), so a stale PC can't wipe the phone. Darren is fine with that ("no Main is way better").
+  Tiny gap (2 devices saving in the same 1-2 s, whole-Sheet write) = optional "read back + resend" fix in gsheet.js run() + Worker.
+- **Friends can't sign in yet:** Google app still Testing → add test users (Google Cloud → Audience) or Branding + privacy page + Publish.
+- **Google re-tap every hour:** idea = sync through the Worker (service account) so the app never needs Google's token.
+- Optional: 📱 Your devices list in Settings.
+- Darren: change MCP_PIN to a strong one + run Deploy Worker on main. Move the passport over to main live (his job).
+- Day-to-day tasks: use a normal Claude chat (TaskNotes connector), not this coding repo.
 
 **Setup facts (from 4 Nov):** robot `tasknotes-robot@passport-513517` (Passport project) is shared on the real Sheet.
 Cloudflare = df.ai.lab.hq account.
