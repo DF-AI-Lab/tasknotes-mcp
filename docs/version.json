@@ -1,1 +1,1 @@
-{"version":"1.10","demo":"10","notes":"Sign out in Passport settings"}
+{"version":"1.11","demo":"11","notes":"Stays signed in: no more 5 minute lock. Only Secrets asks for the passcode."}
