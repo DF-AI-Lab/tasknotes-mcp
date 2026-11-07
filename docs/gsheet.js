@@ -14,9 +14,9 @@
 
   // same columns as the Worker (worker/src/data.js), so Claude can read the same Sheet later
   const COLS = {
-    tasks: ['id', 'title', 'category', 'due', 'estimate_mins', 'done', 'done_at', 'created', 'updated', 'deleted_at', 'deleted_by', 'details'],
-    notes: ['id', 'text', 'category', 'review_later', 'reviewed', 'created', 'updated', 'deleted_at', 'deleted_by'],
-    cats: ['name', 'colour', 'emoji', 'updated', 'deleted_at'],
+    tasks: ['id', 'title', 'category', 'due', 'estimate_mins', 'done', 'done_at', 'created', 'updated', 'deleted_at', 'deleted_by', 'details', 'important'],
+    notes: ['id', 'text', 'category', 'review_later', 'reviewed', 'created', 'updated', 'deleted_at', 'deleted_by', 'important'],
+    cats: ['name', 'colour', 'emoji', 'updated', 'deleted_at', 'important'],
     secrets: ['id', 'data', 'created', 'updated', 'deleted_at', 'deleted_by'],
   };
   const TABS = {tasks: 'Tasks', notes: 'Notes', cats: 'Categories', secrets: 'Secrets'};
@@ -25,6 +25,7 @@
 
   // ---------- rows <-> Sheet values ----------
   function cell(col, v) {
+    if (col === 'important') { const t = String(v == null ? '' : v).trim(); return v === true || /^(true|yes|1|✓)$/i.test(t) ? 'yes' : /^(no|off)$/i.test(t) ? 'no' : ''; }
     if (BOOLS.has(col)) return v === true || /^(true|yes|1|x|✓)$/i.test(String(v == null ? '' : v).trim());
     if (NUMS.has(col)) return Number(v) || 0;
     return v == null ? '' : String(v);

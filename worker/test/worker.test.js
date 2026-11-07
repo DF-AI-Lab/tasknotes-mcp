@@ -42,7 +42,7 @@ test('reads the old mock sheet format', () => {
   const t = fromValues('tasks', sheet.Tasks);
   assert.equal(t[0].due, '2026-11-01'); assert.equal(t[0].estimate_mins, 15); assert.equal(t[0].done, false);
   const n = fromValues('notes', sheet.Notes); assert.equal(n[0].review_later, true);
-  assert.deepEqual(toValues('cats', [{name: 'Home', colour: '#e0663a'}])[1], ['Home', '#e0663a', '', '', '']);
+  assert.deepEqual(toValues('cats', [{name: 'Home', colour: '#e0663a'}])[1], ['Home', '#e0663a', '', '', '', '']);
 });
 
 test('dates', () => {
@@ -62,7 +62,7 @@ test('phone: wrong key is refused, sync merges and writes', async () => {
   const r = await call('/api/sync', {method: 'POST', headers: {Authorization: 'Bearer app-key-123', 'Content-Type': 'application/json'}, body: JSON.stringify({changes: {tasks: [row]}})});
   const snap = await r.json();
   assert.equal(snap.tasks.length, 2);
-  assert.equal(sheet.Tasks[0].length, 12);                     // new columns added
+  assert.equal(sheet.Tasks[0].length, 13);                     // new columns added
   assert.equal(sheet.Tasks[2][1], 'From phone');
   // an older copy does not win
   applyChanges(snap, {tasks: [Object.assign({}, row, {title: 'old', updated: '2020-01-01'})]});
@@ -143,6 +143,42 @@ test('tools on a snapshot', () => {
   assert.match(runTool(snap, 'add_category', {name: 'Garden', emoji: '🌱'}).text, /Garden/);
   assert.match(runTool(snap, 'list_categories', {}).text, /Garden/);
   assert.throws(() => runTool(snap, 'edit_task', {id: 'nope'}), /Nothing has the id/);
+});
+
+test('⭐ important: tasks, notes and whole categories', () => {
+  const snap = {tasks: [], notes: [], cats: [{name: 'Home', colour: '#e0663a', emoji: '🏠', updated: '', deleted_at: ''}, {name: 'AI Lab', colour: '#7a5af8', emoji: '🤖', updated: '', deleted_at: ''}]};
+  const id = runTool(snap, 'add_task', {title: 'Pay bill', category: 'Home'}).text.match(/\[(t_[^\]]+)\]/)[1];
+  runTool(snap, 'add_task', {title: 'Plain', category: 'Home'});
+  runTool(snap, 'add_task', {title: 'Build bot', category: 'AI Lab'});
+  assert.equal(runTool(snap, 'list_tasks', {important_only: true}).text, 'No tasks match.');
+  assert.match(runTool(snap, 'edit_task', {id, important: true}).text, /⭐ Pay bill/);
+  assert.match(runTool(snap, 'edit_category', {name: 'ai lab', important: true}).text, /⭐/);
+  const imp = runTool(snap, 'list_tasks', {important_only: true}).text;
+  assert.match(imp, /2 task/); assert.match(imp, /⭐ Build bot/); assert.ok(!imp.includes('Plain'));
+  assert.match(runTool(snap, 'list_categories', {}).text, /⭐ 🤖 AI Lab/);
+  runTool(snap, 'edit_task', {id, important: false});
+  assert.equal(snap.tasks[0].important, '');
+  runTool(snap, 'add_note', {text: 'star me', category: 'Home', important: true});
+  runTool(snap, 'add_note', {text: 'not me', category: 'Home'});
+  const ns = runTool(snap, 'list_notes', {important_only: true}).text;
+  assert.match(ns, /⭐ star me/); assert.ok(!ns.includes('not me'));
+  const nid = snap.notes[0].id;
+  runTool(snap, 'edit_note', {id: nid, important: false});
+  assert.equal(runTool(snap, 'list_notes', {important_only: true}).text, 'No notes match.');
+  assert.throws(() => runTool(snap, 'edit_category', {name: 'Nope', important: true}), /no category/);
+  // it goes to the Sheet and back
+  assert.equal(fromValues('cats', toValues('cats', snap.cats))[1].important, 'yes');
+  // unstar one task inside the starred AI Lab: it stays off, the rest stay on
+  const bot = snap.tasks.find(t => t.title === 'Build bot');
+  runTool(snap, 'edit_task', {id: bot.id, important: false});
+  assert.equal(bot.important, 'no');
+  assert.ok(!runTool(snap, 'list_tasks', {important_only: true}).text.includes('Build bot'));
+  runTool(snap, 'add_task', {title: 'Other bot', category: 'AI Lab'});
+  assert.match(runTool(snap, 'list_tasks', {important_only: true}).text, /⭐ Other bot/);
+  runTool(snap, 'edit_task', {id: bot.id, important: true});
+  assert.equal(bot.important, '');                               // back to following the category
+  // old v1.16 TRUE/FALSE cells still read fine
+  assert.equal(fromValues('tasks', [['id', 'important'], ['t1', 'TRUE'], ['t2', 'FALSE']]).map(t => t.important).join(','), 'yes,');
 });
 
 test('MCP handles unknown methods and bad messages', async () => {

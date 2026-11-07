@@ -88,13 +88,13 @@
   function addTask(s, f) {
     const row = {id: rid('t'), title: String(f.title || '').trim(), category: catOrFirst(s, f.category).name,
       due: f.due || '', estimate_mins: Number(f.estimate_mins) || 0, done: false, done_at: '', created: nowIso(),
-      updated: '', deleted_at: '', deleted_by: '', details: String(f.details || '').trim()};
+      updated: '', deleted_at: '', deleted_by: '', details: String(f.details || '').trim(), important: ''};
     s.tasks.unshift(row);
     return touch(s, 'tasks', row);
   }
   function addNote(s, f) {
     const row = {id: rid('n'), text: String(f.text || '').trim(), category: catOrFirst(s, f.category).name,
-      review_later: !!f.review_later, reviewed: false, created: nowIso(), updated: '', deleted_at: '', deleted_by: ''};
+      review_later: !!f.review_later, reviewed: false, created: nowIso(), updated: '', deleted_at: '', deleted_by: '', important: ''};
     s.notes.unshift(row);
     return touch(s, 'notes', row);
   }
@@ -118,6 +118,21 @@
     row.review_later = on == null ? !row.review_later : !!on;
     row.reviewed = !row.review_later;
     return touch(s, 'notes', row);
+  }
+  // ⭐ important. A category is 'yes' or ''. A task/note is:
+  //   ''    = follow its category (starred category = starred task)
+  //   'yes' = starred even if its category is not
+  //   'no'  = NOT starred even if its category is
+  const impVal = v => { const t = String(v == null ? '' : v).trim(); return v === true || /^(true|yes|1|✓)$/i.test(t) ? 'yes' : /^(no|off)$/i.test(t) ? 'no' : ''; };
+  const catStarred = (s, name) => impVal((cat(s, name) || {}).important) === 'yes';
+  const isImportant = (s, r) => { const v = impVal(r.important); return v === 'yes' || (v !== 'no' && catStarred(s, r.category)); };
+  // on = true/false, or leave it out to flip it. Keeps '' when the wish matches the category
+  function star(s, kind, id, on) {
+    const row = kind === 'cats' ? cat(s, id) : find(s, kind, id);
+    if (!row) return null;
+    if (kind === 'cats') { const want = on == null ? impVal(row.important) !== 'yes' : !!on; row.important = want ? 'yes' : ''; }
+    else { const want = on == null ? !isImportant(s, row) : !!on; row.important = want === catStarred(s, row.category) ? '' : want ? 'yes' : 'no'; }
+    return touch(s, kind, row);
   }
   function remove(s, kind, id, by) {                     // by: 'you' (straight away) or 'claude' (asks first)
     const row = find(s, kind, id);
@@ -232,6 +247,10 @@
     [['Shared login for all DF apps', 'AI Lab', true], ['Try reminders v2', 'AI Lab', false], ['Fence panel is loose', 'Home', true],
      ['Ask about Friday rota', 'Work', true], ['Stretch after runs', 'Health', false]]
       .forEach(([text, category, review_later]) => addNote(s, {text, category, review_later}));
+    star(s, 'cats', 'AI Lab', true);
+    s.tasks.find(x => x.title === 'Book MOT').details = 'Garage on Main St. Ring before 10am, ask for the Saturday slot. Bring the V5 and last year\'s certificate.';
+    s.tasks.find(x => x.title === "Reply to Sam's email").details = 'Say yes to Thursday';
+    star(s, 'tasks', s.tasks.find(x => x.title === 'Send invoice').id, true);
     const t = addTask(s, {title: 'Old test task', category: 'Work', due: d(-5), estimate_mins: 10});
     remove(s, 'tasks', t.id, 'claude');
     s.tasks.reverse(); s.notes.reverse();
@@ -240,7 +259,7 @@
   }
 
   const Store = {DAY, PURGE_DAYS, COLOURS, BUCKETS, empty, starter, demo, ymd, addDays, bucket, dueLabel, fmtMins, parseQuick,
-    live, pendingDelete, shown, cats, cat, catOrFirst, addTask, addNote, edit, tick, flag, remove, undelete, confirmDelete,
+    live, pendingDelete, shown, cats, cat, catOrFirst, addTask, addNote, edit, tick, flag, star, isImportant, impVal, remove, undelete, confirmDelete,
     addCat, editCat, removeCat, addSecret, KINDS, purge, outbox, outboxCount, merge, find};
   if (typeof module !== 'undefined' && module.exports) module.exports = Store;
   else root.Store = Store;

@@ -2,9 +2,9 @@
 // A "snapshot" is the whole Sheet as plain objects: {tasks: [...], notes: [...], cats: [...]}.
 
 export const COLS = {
-  tasks: ['id', 'title', 'category', 'due', 'estimate_mins', 'done', 'done_at', 'created', 'updated', 'deleted_at', 'deleted_by', 'details'],
-  notes: ['id', 'text', 'category', 'review_later', 'reviewed', 'created', 'updated', 'deleted_at', 'deleted_by'],
-  cats: ['name', 'colour', 'emoji', 'updated', 'deleted_at'],
+  tasks: ['id', 'title', 'category', 'due', 'estimate_mins', 'done', 'done_at', 'created', 'updated', 'deleted_at', 'deleted_by', 'details', 'important'],
+  notes: ['id', 'text', 'category', 'review_later', 'reviewed', 'created', 'updated', 'deleted_at', 'deleted_by', 'important'],
+  cats: ['name', 'colour', 'emoji', 'updated', 'deleted_at', 'important'],
   secrets: ['id', 'data', 'created', 'updated', 'deleted_at', 'deleted_by'],   // 🔐 scrambled on the phone; no Claude tool reads this
 };
 export const TABS = {tasks: 'Tasks', notes: 'Notes', cats: 'Categories', secrets: 'Secrets'};
@@ -19,7 +19,9 @@ const nowIso = () => new Date().toISOString();
 const rid = p => p + '_' + Math.random().toString(36).slice(2, 8) + Date.now().toString(36).slice(-4);
 
 // ---------- Sheet rows <-> objects ----------
+export const impVal = v => { const t = String(v ?? '').trim(); return v === true || /^(true|yes|1|✓)$/i.test(t) ? 'yes' : /^(no|off)$/i.test(t) ? 'no' : ''; };
 function cell(col, v) {
+  if (col === 'important') return impVal(v);
   if (BOOLS.has(col)) return v === true || /^(true|yes|1|x|✓)$/i.test(String(v ?? '').trim());
   if (NUMS.has(col)) return Number(v) || 0;
   if (col === 'due') return normalDate(v);
@@ -134,42 +136,58 @@ function getRow(snap, id) {
   for (const kind of ['tasks', 'notes']) { const r = snap[kind].find(x => x.id === id); if (r) return [kind, r]; }
   throw new Error(`Nothing has the id "${id}". List tasks or notes first to get the right id.`);
 }
-const taskLine = (t, today) => `- [${t.id}] ${t.done ? '✅ ' : ''}${t.title} | ${t.category} | ${when(t.due, today)}${t.estimate_mins ? ' | ' + mins(t.estimate_mins) : ''}${t.details ? ' | 📝 ' + String(t.details).replace(/\s+/g, ' ').slice(0, 80) : ''}${t.deleted_at ? ' | (waiting for delete confirm)' : ''}`;
-const noteLine = n => `- [${n.id}] ${n.review_later ? '🔖 ' : ''}${n.text.replace(/\s+/g, ' ')} | ${n.category}${n.deleted_at ? ' | (waiting for delete confirm)' : ''}`;
+// ⭐ = important: its own star, or its category is starred
+// task/note important: '' = follow its category, 'yes' = starred anyway, 'no' = not starred even in a starred category
+const catStarred = (snap, name) => !!(snap && (snap.cats || []).find(c => live(c) && c.name === name && impVal(c.important) === 'yes'));
+const isImportant = (snap, r) => { const v = impVal(r.important); return v === 'yes' || (v !== 'no' && catStarred(snap, r.category)); };
+const setStar = (snap, r, want) => { r.important = want === catStarred(snap, r.category) ? '' : want ? 'yes' : 'no'; };
+const star = (snap, r) => isImportant(snap, r) ? '⭐ ' : '';
+const bool = (v) => v === true || /^(true|yes|1)$/i.test(String(v));
+const taskLine = (t, today, snap) => `- [${t.id}] ${t.done ? '✅ ' : ''}${star(snap, t)}${t.title} | ${t.category} | ${when(t.due, today)}${t.estimate_mins ? ' | ' + mins(t.estimate_mins) : ''}${t.details ? ' | 📝 ' + String(t.details).replace(/\s+/g, ' ').slice(0, 80) : ''}${t.deleted_at ? ' | (waiting for delete confirm)' : ''}`;
+const noteLine = (n, snap) => `- [${n.id}] ${star(snap, n)}${n.review_later ? '🔖 ' : ''}${n.text.replace(/\s+/g, ' ')} | ${n.category}${n.deleted_at ? ' | (waiting for delete confirm)' : ''}`;
 const touch = r => { r.updated = nowIso(); return r; };
 
 const str = (d) => ({type: 'string', description: d});
 export const TOOLS = [
   {name: 'day_summary', description: "Today's plan: overdue and due-today tasks with total time, plus how many notes wait for review. Start here when asked what is on today.",
     inputSchema: {type: 'object', properties: {}}, annotations: {readOnlyHint: true}},
-  {name: 'list_tasks', description: 'List open tasks (or done ones). Each line starts with the [id] to use in other tools.',
+  {name: 'list_tasks', description: 'List open tasks (or done ones). Each line starts with the [id] to use in other tools. ⭐ = important (the task itself or its whole category).',
     inputSchema: {type: 'object', properties: {
       category: str('Only this category (optional)'),
       when: {type: 'string', enum: ['all', 'overdue', 'today', 'tomorrow', 'week', 'no_date'], description: "'today' includes overdue. Default all."},
       include_done: {type: 'boolean', description: 'Show done tasks instead of open ones'},
-      search: str('Only tasks whose title contains this text')}}, annotations: {readOnlyHint: true}},
+      search: str('Only tasks whose title or notes contain this text'),
+      important_only: {type: 'boolean', description: 'Only ⭐ important tasks (starred, or in a starred category)'}}}, annotations: {readOnlyHint: true}},
   {name: 'add_task', description: 'Add a task.',
     inputSchema: {type: 'object', required: ['title'], properties: {
       title: str('What to do'), category: str('Category name (default: the first one)'),
       due: str('YYYY-MM-DD, today, tomorrow, a weekday, or empty for no date'),
-      estimate_mins: {type: 'number', description: 'How many minutes it takes'}, details: str('Optional notes / more detail about the task')}}},
+      estimate_mins: {type: 'number', description: 'How many minutes it takes'}, details: str('Optional notes / more detail about the task'),
+      important: {type: 'boolean', description: '⭐ Mark it important'}}}},
   {name: 'edit_task', description: 'Change a task. Only the fields you pass change.',
     inputSchema: {type: 'object', required: ['id'], properties: {
       id: str('Task id, like t_abc123'), title: str('New title'), category: str('New category'),
-      due: str('New due date (YYYY-MM-DD, today, tomorrow, weekday, or "none")'), estimate_mins: {type: 'number'}, details: str('New notes / details (empty string clears them)')}}},
+      due: str('New due date (YYYY-MM-DD, today, tomorrow, weekday, or "none")'), estimate_mins: {type: 'number'}, details: str('New notes / details (empty string clears them)'),
+      important: {type: 'boolean', description: 'true = ⭐ important, false = not important (works even inside a starred category)'}}}},
   {name: 'complete_task', description: 'Tick a task off (or set done=false to reopen it). Done tasks are hidden but kept.',
     inputSchema: {type: 'object', required: ['id'], properties: {id: str('Task id'), done: {type: 'boolean', description: 'Default true'}}}},
-  {name: 'list_notes', description: 'List notes. Each line starts with the [id]. 🔖 = flagged to review later.',
-    inputSchema: {type: 'object', properties: {category: str('Only this category'), review_later_only: {type: 'boolean'}, search: str('Text to look for')}},
+  {name: 'list_notes', description: 'List notes. Each line starts with the [id]. 🔖 = flagged to review later. ⭐ = important (the note itself or its whole category).',
+    inputSchema: {type: 'object', properties: {category: str('Only this category'), review_later_only: {type: 'boolean'}, search: str('Text to look for'),
+      important_only: {type: 'boolean', description: 'Only ⭐ important notes (starred, or in a starred category)'}}},
     annotations: {readOnlyHint: true}},
   {name: 'list_review_notes', description: 'Notes flagged "review later".', inputSchema: {type: 'object', properties: {}}, annotations: {readOnlyHint: true}},
   {name: 'add_note', description: 'Add a quick note. Set review_later to flag it for the Review screen.',
-    inputSchema: {type: 'object', required: ['text'], properties: {text: str('The note'), category: str('Category name'), review_later: {type: 'boolean'}}}},
+    inputSchema: {type: 'object', required: ['text'], properties: {text: str('The note'), category: str('Category name'), review_later: {type: 'boolean'}, important: {type: 'boolean', description: '⭐ Mark it important'}}}},
   {name: 'edit_note', description: 'Change a note. review_later=false marks it reviewed.',
-    inputSchema: {type: 'object', required: ['id'], properties: {id: str('Note id, like n_abc123'), text: str('New text'), category: str('New category'), review_later: {type: 'boolean'}}}},
-  {name: 'list_categories', description: 'All categories with how many open tasks and notes each has.', inputSchema: {type: 'object', properties: {}}, annotations: {readOnlyHint: true}},
+    inputSchema: {type: 'object', required: ['id'], properties: {id: str('Note id, like n_abc123'), text: str('New text'), category: str('New category'), review_later: {type: 'boolean'},
+      important: {type: 'boolean', description: 'true = ⭐ important, false = not important (works even inside a starred category)'}}}},
+  {name: 'list_categories', description: 'All categories with how many open tasks and notes each has. ⭐ = an important category.', inputSchema: {type: 'object', properties: {}}, annotations: {readOnlyHint: true}},
   {name: 'add_category', description: 'Add a category.',
-    inputSchema: {type: 'object', required: ['name'], properties: {name: str('Name'), emoji: str('One emoji (optional)'), colour: str('Hex colour like #2f6fdf (optional)')}}},
+    inputSchema: {type: 'object', required: ['name'], properties: {name: str('Name'), emoji: str('One emoji (optional)'), colour: str('Hex colour like #2f6fdf (optional)'),
+      important: {type: 'boolean', description: '⭐ Mark the whole category important'}}}},
+  {name: 'edit_category', description: 'Change a category: mark it ⭐ important (or clear it), or change its emoji or colour. Only the fields you pass change.',
+    inputSchema: {type: 'object', required: ['name'], properties: {name: str('Category name'), important: {type: 'boolean', description: 'true = ⭐ important, false = clear the star'},
+      emoji: str('New emoji (optional)'), colour: str('New hex colour like #2f6fdf (optional)')}}},
   {name: 'delete_item', description: 'Ask to delete a task or note. It is NOT gone yet: it shows crossed out in the app until Darren confirms or keeps it, and goes by itself after 7 days.',
     inputSchema: {type: 'object', required: ['id'], properties: {id: str('Task or note id')}}, annotations: {destructiveHint: true}},
 ];
@@ -186,14 +204,15 @@ export function runTool(snap, name, a, tz) {
       const rev = snap.notes.filter(n => live(n) && n.review_later).length;
       const pend = snap.tasks.concat(snap.notes).filter(r => r.deleted_at && r.deleted_by === 'claude').length;
       return {text: `Today is ${today}. ${due.length} task(s) due or overdue${total ? ', about ' + mins(total) : ''}.\n` +
-        (due.map(t => taskLine(t, today)).join('\n') || '(nothing due)') +
+        (due.map(t => taskLine(t, today, snap)).join('\n') || '(nothing due)') +
         `\n\nTomorrow: ${open.filter(t => t.due === plus(today, 1)).length} task(s). No date: ${open.filter(t => !t.due).length}.` +
         `\nNotes to review: ${rev}.${pend ? `\nWaiting for Darren to confirm delete: ${pend}.` : ''}`};
     }
     case 'list_tasks': {
       let list = snap.tasks.filter(t => (a.include_done ? t.done : !t.done) && !(t.deleted_at && t.deleted_by !== 'claude'));
       if (a.category) { const c = needCat(snap, a.category); list = list.filter(t => t.category === c); }
-      if (a.search) list = list.filter(t => t.title.toLowerCase().includes(String(a.search).toLowerCase()));
+      if (a.search) { const q = String(a.search).toLowerCase(); list = list.filter(t => (t.title + ' ' + (t.details || '')).toLowerCase().includes(q)); }
+      if (bool(a.important_only)) list = list.filter(t => isImportant(snap, t));
       const w = a.when || 'all';
       if (w === 'overdue') list = list.filter(t => t.due && t.due < today);
       if (w === 'today') list = list.filter(t => t.due && t.due <= today);
@@ -201,15 +220,16 @@ export function runTool(snap, name, a, tz) {
       if (w === 'week') list = list.filter(t => t.due && t.due <= plus(today, 7));
       if (w === 'no_date') list = list.filter(t => !t.due);
       list.sort((x, y) => (x.due || '9999').localeCompare(y.due || '9999'));
-      return {text: list.length ? `${list.length} task(s), today is ${today}:\n` + list.map(t => taskLine(t, today)).join('\n') : 'No tasks match.'};
+      return {text: list.length ? `${list.length} task(s), today is ${today}:\n` + list.map(t => taskLine(t, today, snap)).join('\n') : 'No tasks match.'};
     }
     case 'add_task': {
       const title = String(a.title || '').trim();
       if (!title) throw new Error('A task needs a title.');
       const t = {id: rid('t'), title, category: needCat(snap, a.category), due: parseDue(a.due, today), estimate_mins: Math.max(0, Math.round(Number(a.estimate_mins) || 0)),
-        done: false, done_at: '', created: nowIso(), updated: '', deleted_at: '', deleted_by: '', details: String(a.details || '').trim()};
+        done: false, done_at: '', created: nowIso(), updated: '', deleted_at: '', deleted_by: '', details: String(a.details || '').trim(), important: ''};
+      if (a.important != null) setStar(snap, t, bool(a.important));
       snap.tasks.push(touch(t));
-      return {text: 'Added:\n' + taskLine(t, today), changed: true};
+      return {text: 'Added:\n' + taskLine(t, today, snap), changed: true};
     }
     case 'edit_task': {
       const [kind, t] = getRow(snap, a.id);
@@ -219,8 +239,9 @@ export function runTool(snap, name, a, tz) {
       if (a.due != null) t.due = parseDue(a.due, today);
       if (a.estimate_mins != null) t.estimate_mins = Math.max(0, Math.round(Number(a.estimate_mins) || 0));
       if (a.details != null) t.details = String(a.details).trim();
+      if (a.important != null) setStar(snap, t, bool(a.important));
       touch(t);
-      return {text: 'Changed:\n' + taskLine(t, today), changed: true};
+      return {text: 'Changed:\n' + taskLine(t, today, snap), changed: true};
     }
     case 'complete_task': {
       const [kind, t] = getRow(snap, a.id);
@@ -235,14 +256,16 @@ export function runTool(snap, name, a, tz) {
       if (name === 'list_review_notes' || a.review_later_only) list = list.filter(n => n.review_later && live(n));
       if (a.category) { const c = needCat(snap, a.category); list = list.filter(n => n.category === c); }
       if (a.search) list = list.filter(n => n.text.toLowerCase().includes(String(a.search).toLowerCase()));
-      return {text: list.length ? `${list.length} note(s):\n` + list.map(noteLine).join('\n') : 'No notes match.'};
+      if (bool(a.important_only)) list = list.filter(n => isImportant(snap, n));
+      return {text: list.length ? `${list.length} note(s):\n` + list.map(n => noteLine(n, snap)).join('\n') : 'No notes match.'};
     }
     case 'add_note': {
       const text = String(a.text || '').trim();
       if (!text) throw new Error('A note needs some text.');
-      const n = {id: rid('n'), text, category: needCat(snap, a.category), review_later: !!a.review_later, reviewed: false, created: nowIso(), updated: '', deleted_at: '', deleted_by: ''};
+      const n = {id: rid('n'), text, category: needCat(snap, a.category), review_later: !!a.review_later, reviewed: false, created: nowIso(), updated: '', deleted_at: '', deleted_by: '', important: ''};
+      if (a.important != null) setStar(snap, n, bool(a.important));
       snap.notes.push(touch(n));
-      return {text: 'Added note:\n' + noteLine(n), changed: true};
+      return {text: 'Added note:\n' + noteLine(n, snap), changed: true};
     }
     case 'edit_note': {
       const [kind, n] = getRow(snap, a.id);
@@ -250,23 +273,34 @@ export function runTool(snap, name, a, tz) {
       if (a.text != null) { if (!String(a.text).trim()) throw new Error('The note cannot be empty.'); n.text = String(a.text).trim(); }
       if (a.category != null) n.category = needCat(snap, a.category);
       if (a.review_later != null) { n.review_later = !!a.review_later; if (!n.review_later) n.reviewed = true; }
+      if (a.important != null) setStar(snap, n, bool(a.important));
       touch(n);
-      return {text: 'Changed:\n' + noteLine(n), changed: true};
+      return {text: 'Changed:\n' + noteLine(n, snap), changed: true};
     }
     case 'list_categories': {
       const cs = snap.cats.filter(live);
-      return {text: cs.length ? cs.map(c => `- ${c.emoji || ''} ${c.name}: ${open.filter(t => t.category === c.name).length} open task(s), ${snap.notes.filter(n => live(n) && n.category === c.name).length} note(s)`).join('\n') : 'No categories yet.'};
+      return {text: cs.length ? cs.map(c => `- ${impVal(c.important) === 'yes' ? '⭐ ' : ''}${c.emoji || ''} ${c.name}: ${open.filter(t => t.category === c.name).length} open task(s), ${snap.notes.filter(n => live(n) && n.category === c.name).length} note(s)`).join('\n') : 'No categories yet.'};
     }
     case 'add_category': {
       const nm = String(a.name || '').trim().slice(0, 24);
       if (!nm) throw new Error('A category needs a name.');
       let c = snap.cats.find(x => x.name.toLowerCase() === nm.toLowerCase());
-      if (c && live(c)) return {text: `"${c.name}" is already a category.`};
+      if (c && live(c)) return {text: `"${c.name}" is already a category. Use edit_category to change it.`};
       const colour = /^#[0-9a-f]{6}$/i.test(a.colour || '') ? a.colour : COLOURS[snap.cats.length % COLOURS.length];
-      if (c) Object.assign(c, {deleted_at: '', emoji: a.emoji || c.emoji, colour});
-      else { c = {name: nm, colour, emoji: a.emoji || '📁', updated: '', deleted_at: ''}; snap.cats.push(c); }
+      if (c) Object.assign(c, {deleted_at: '', emoji: a.emoji || c.emoji, colour, important: bool(a.important) ? 'yes' : ''});
+      else { c = {name: nm, colour, emoji: a.emoji || '📁', updated: '', deleted_at: '', important: bool(a.important) ? 'yes' : ''}; snap.cats.push(c); }
       touch(c);
-      return {text: `Added category ${c.emoji} ${c.name}.`, changed: true};
+      return {text: `Added category ${c.important === 'yes' ? '⭐ ' : ''}${c.emoji} ${c.name}.`, changed: true};
+    }
+    case 'edit_category': {
+      const c = findCat(snap, a.name);
+      if (!c || !String(a.name || '').trim()) throw new Error(`There is no category called "${a.name}". Categories: ${snap.cats.filter(live).map(x => x.name).join(', ')}.`);
+      if (a.important != null) c.important = bool(a.important) ? 'yes' : '';
+      if (a.emoji) c.emoji = String(a.emoji).trim();
+      if (a.colour != null) { if (!/^#[0-9a-f]{6}$/i.test(a.colour)) throw new Error('Colour must look like #2f6fdf.'); c.colour = a.colour; }
+      touch(c);
+      const on = c.important === 'yes';
+      return {text: `Changed category: ${on ? '⭐ ' : ''}${c.emoji || ''} ${c.name}${on ? ' (important: all its tasks and notes count as ⭐ unless one is unstarred)' : ''}.`, changed: true};
     }
     case 'delete_item': {
       const [, r] = getRow(snap, a.id);
