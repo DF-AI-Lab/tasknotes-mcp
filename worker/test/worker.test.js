@@ -62,7 +62,7 @@ test('phone: wrong key is refused, sync merges and writes', async () => {
   const r = await call('/api/sync', {method: 'POST', headers: {Authorization: 'Bearer app-key-123', 'Content-Type': 'application/json'}, body: JSON.stringify({changes: {tasks: [row]}})});
   const snap = await r.json();
   assert.equal(snap.tasks.length, 2);
-  assert.equal(sheet.Tasks[0].length, 11);                     // new columns added
+  assert.equal(sheet.Tasks[0].length, 12);                     // new columns added
   assert.equal(sheet.Tasks[2][1], 'From phone');
   // an older copy does not win
   applyChanges(snap, {tasks: [Object.assign({}, row, {title: 'old', updated: '2020-01-01'})]});

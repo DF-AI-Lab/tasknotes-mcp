@@ -206,3 +206,23 @@ h3.sec button{background:none;border:0;color:var(--m);font:500 11px var(--mono);
 .gsteps .btn{display:block;text-align:center;text-decoration:none}
 .qr{display:block;margin:14px auto 8px;width:220px;height:220px;background:#fff;border-radius:14px;padding:8px}
 .invlink{text-align:center;word-break:break-all;font-size:.9rem;opacity:.8;margin:0 0 12px}
+/* v1.15 task sheet: title, 3 pills, notes */
+.ts-title{width:100%;background:none;border:0;border-bottom:1px solid var(--ln);padding:10px 2px;font:700 19px var(--display);color:var(--t);border-radius:0}
+.ts-title:focus{outline:none;border-bottom-color:var(--ac)}
+.ts-pills{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px}
+.ts-pill{background:none;border:1px solid var(--ln);border-radius:99px;padding:7px 8px;font-size:13px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.ts-pill.dim{color:var(--m);font-weight:600}
+.ts-pill.open{border-color:var(--ac);color:var(--ac)}
+.ts-pop{display:flex;flex-direction:column;gap:8px;padding:2px 0}
+.ts-pop .chip{padding:5px 10px;font-size:12.5px;white-space:nowrap}
+.ts-pop .chip.add{border-style:dashed;background:none;color:var(--m)}
+.ts-mini{background:var(--k);border:1px solid var(--ln);border-radius:99px;padding:5px 12px;font-size:14px;width:auto;max-width:170px}
+.ts-own{display:flex;align-items:center;gap:6px;font-size:13px;color:var(--m)}
+.ts-own .ts-mini{width:90px}
+.ts-notes{width:100%;min-height:120px;resize:vertical;background:none;border:0;padding:4px 2px;font:500 15px/1.5 var(--display);color:var(--t)}
+.ts-notes:focus{outline:none}
+.ts-notes::placeholder,.ts-title::placeholder{color:var(--m)}
+.ts-foot{display:flex;gap:10px;align-items:center;border-top:1px solid var(--ln);padding-top:12px}
+.ts-foot .btn{flex:1;padding:11px}
+.ts-del{background:none;border:1px solid var(--ln);border-radius:14px;padding:10px 14px;font-size:16px}
+.has-notes{font-size:.8em;opacity:.7}

@@ -88,7 +88,7 @@
   function addTask(s, f) {
     const row = {id: rid('t'), title: String(f.title || '').trim(), category: catOrFirst(s, f.category).name,
       due: f.due || '', estimate_mins: Number(f.estimate_mins) || 0, done: false, done_at: '', created: nowIso(),
-      updated: '', deleted_at: '', deleted_by: ''};
+      updated: '', deleted_at: '', deleted_by: '', details: String(f.details || '').trim()};
     s.tasks.unshift(row);
     return touch(s, 'tasks', row);
   }
