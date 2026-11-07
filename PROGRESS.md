@@ -119,6 +119,14 @@ Change MCP_PIN to a strong one + redeploy.
 3. ~~**No timer lock on the app**~~ ✅ v1.11/v1.13: opens straight in (v1.13 flag `tasknotes-locked`, set only by Lock now / Sign out). Secrets unchanged
 4. Maybe: repeating tasks (IDEAS.md)
 
+### 📋 Next session list (Darren, 7 Nov late) — live = v1.15 on main
+- ✅ v1.15 done: new minimal task screen (title, 3 pills: category · date · time, Notes box, "+ New" category). PR #12 merged, Worker auto-deployed.
+- **Friends:** invite = their OWN TaskNotes (not Darren's). But Google sign-in is still Testing → friends can't ☁️ sign in yet.
+  Darren to choose: A) add each friend as test user (Google Cloud → Audience), B) Publish (unverified warning), or skip (phone-only).
+- **Next build:** stop Google re-tap every hour (sync through the Worker / service account).
+- Optional: 📱 Your devices list. Maybe: repeating tasks (IDEAS.md).
+- Still Darren's job: strong MCP_PIN.
+
 ### 📋 Next session list (Darren, 7 Nov evening) — live = v1.14 on main
 - **Linking devices:** NOT needed as WMM's Main/invite. Same Google = same passport = same Sheet. TaskNotes merges row by row
   (newest `updated` wins, only changed rows sent), so a stale PC can't wipe the phone. Darren is fine with that ("no Main is way better").
