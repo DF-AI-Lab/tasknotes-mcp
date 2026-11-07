@@ -42,7 +42,7 @@ test('reads the old mock sheet format', () => {
   const t = fromValues('tasks', sheet.Tasks);
   assert.equal(t[0].due, '2026-11-01'); assert.equal(t[0].estimate_mins, 15); assert.equal(t[0].done, false);
   const n = fromValues('notes', sheet.Notes); assert.equal(n[0].review_later, true);
-  assert.deepEqual(toValues('cats', [{name: 'Home', colour: '#e0663a'}])[1], ['Home', '#e0663a', '', '', '', false]);
+  assert.deepEqual(toValues('cats', [{name: 'Home', colour: '#e0663a'}])[1], ['Home', '#e0663a', '', '', '', '']);
 });
 
 test('dates', () => {
@@ -157,7 +157,7 @@ test('⭐ important: tasks, notes and whole categories', () => {
   assert.match(imp, /2 task/); assert.match(imp, /⭐ Build bot/); assert.ok(!imp.includes('Plain'));
   assert.match(runTool(snap, 'list_categories', {}).text, /⭐ 🤖 AI Lab/);
   runTool(snap, 'edit_task', {id, important: false});
-  assert.equal(snap.tasks[0].important, false);
+  assert.equal(snap.tasks[0].important, '');
   runTool(snap, 'add_note', {text: 'star me', category: 'Home', important: true});
   runTool(snap, 'add_note', {text: 'not me', category: 'Home'});
   const ns = runTool(snap, 'list_notes', {important_only: true}).text;
@@ -167,7 +167,18 @@ test('⭐ important: tasks, notes and whole categories', () => {
   assert.equal(runTool(snap, 'list_notes', {important_only: true}).text, 'No notes match.');
   assert.throws(() => runTool(snap, 'edit_category', {name: 'Nope', important: true}), /no category/);
   // it goes to the Sheet and back
-  assert.equal(fromValues('cats', toValues('cats', snap.cats))[1].important, true);
+  assert.equal(fromValues('cats', toValues('cats', snap.cats))[1].important, 'yes');
+  // unstar one task inside the starred AI Lab: it stays off, the rest stay on
+  const bot = snap.tasks.find(t => t.title === 'Build bot');
+  runTool(snap, 'edit_task', {id: bot.id, important: false});
+  assert.equal(bot.important, 'no');
+  assert.ok(!runTool(snap, 'list_tasks', {important_only: true}).text.includes('Build bot'));
+  runTool(snap, 'add_task', {title: 'Other bot', category: 'AI Lab'});
+  assert.match(runTool(snap, 'list_tasks', {important_only: true}).text, /⭐ Other bot/);
+  runTool(snap, 'edit_task', {id: bot.id, important: true});
+  assert.equal(bot.important, '');                               // back to following the category
+  // old v1.16 TRUE/FALSE cells still read fine
+  assert.equal(fromValues('tasks', [['id', 'important'], ['t1', 'TRUE'], ['t2', 'FALSE']]).map(t => t.important).join(','), 'yes,');
 });
 
 test('MCP handles unknown methods and bad messages', async () => {

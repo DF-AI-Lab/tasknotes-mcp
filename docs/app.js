@@ -3,7 +3,7 @@
   'use strict';
   const S = window.Store, $ = id => document.getElementById(id);
   // 🏷️ bump these with every change: VERSION for the live app, DEMO_VERSION for the demo
-  const VERSION = '1.17', DEMO_VERSION = '17';
+  const VERSION = '1.18', DEMO_VERSION = '18';
   const DEMO = new URLSearchParams(location.search).has('demo');
   const VER_LABEL = DEMO ? 'demo.v.' + DEMO_VERSION : 'v.' + VERSION;
   const SKEY = DEMO ? 'tn_demo_state_v1' : 'tn_state_v1';
@@ -124,7 +124,7 @@
     return `<div class="grid${filter ? ' filtering' : ''}">${cs.map(c => {
       const nt = st.tasks.filter(t => live(t) && !t.done && t.category === c.name).length;
       const nn = st.notes.filter(n => live(n) && n.category === c.name).length;
-      return `<div class="tw"><button class="tile${filter === c.name ? ' sel' : ''}" data-cat="${esc(c.name)}" style="background:${col(c.colour)}"><b>${c.important ? '⭐ ' : ''}${esc(c.emoji)} ${esc(c.name)}</b><small>${nt} task${nt === 1 ? '' : 's'}${nn ? ' · ' + nn + ' note' + (nn === 1 ? '' : 's') : ''}</small></button><button class="tdots" data-catmenu="${esc(c.name)}" aria-label="Options for ${esc(c.name)}">⋯</button></div>`;
+      return `<div class="tw"><button class="tile${filter === c.name ? ' sel' : ''}" data-cat="${esc(c.name)}" style="background:${col(c.colour)}"><b>${S.impVal(c.important) === 'yes' ? '⭐ ' : ''}${esc(c.emoji)} ${esc(c.name)}</b><small>${nt} task${nt === 1 ? '' : 's'}${nn ? ' · ' + nn + ' note' + (nn === 1 ? '' : 's') : ''}</small></button><button class="tdots" data-catmenu="${esc(c.name)}" aria-label="Options for ${esc(c.name)}">⋯</button></div>`;
     }).join('')}${cs.length % 2 ? '<button class="tile addc" data-addcat="1">＋ Category</button>' : ''}</div>`;
   }
   // v1.17: task card. Notes show 2 lines; tap the card to open it (one at a time), tap again to close.
@@ -132,14 +132,14 @@
   let openTask = null;
   function item(t) {
     const c = catOf(t.category), td = S.ymd(today()), late = t.due && !t.done && t.due < td;
-    const imp = S.isImportant(st, t), own = !!t.important, open = openTask === t.id && t.details;
+    const imp = S.isImportant(st, t), open = openTask === t.id && t.details;
     const dueCls = t.done ? '' : late ? ' late' : t.due === td ? ' today' : '';
     const dueTxt = t.done ? 'done ' + new Date(t.done_at || t.updated).toLocaleDateString('en-GB', {day: 'numeric', month: 'short'}) : S.dueLabel(t.due, today());
     return `<div class="item card${t.done ? ' done' : ''}${open ? ' open' : ''}${imp ? ' imp' : ''}"><button class="chk" data-tick="${esc(t.id)}" aria-label="${t.done ? 'Not done' : 'Done'}: ${esc(t.title)}">${t.done ? '✓' : ''}</button>
       <button class="body" data-open="${esc(t.id)}" aria-expanded="${t.details ? String(!!open) : 'false'}"><div class="t">${esc(t.title)}</div>
         <div class="meta"><span class="pill" style="background:${col(c.colour)}">${esc(c.name)}</span><span class="dp${dueCls}">${esc(dueTxt)}</span>${t.estimate_mins ? `<span class="tp">⏱ ${esc(S.fmtMins(t.estimate_mins))}</span>` : ''}</div>
         ${t.details ? `<div class="nt">${esc(t.details)}</div>` : ''}</button>
-      <div class="acts"><button class="stb${own ? ' on' : ''}" data-star="${esc(t.id)}" aria-pressed="${own}" aria-label="${own ? 'Important, tap to clear' : 'Mark important'}" title="${imp && !own ? 'Important because of its category' : ''}">${imp ? '⭐' : '☆'}</button><button class="tdot" data-tmenu="${esc(t.id)}" aria-label="More for ${esc(t.title)}">⋯</button></div></div>`;
+      <div class="acts"><button class="stb${imp ? ' on' : ''}" data-star="${esc(t.id)}" aria-pressed="${imp}" aria-label="${imp ? 'Important, tap to clear' : 'Mark important'}">${imp ? '⭐' : '☆'}</button><button class="tdot" data-tmenu="${esc(t.id)}" aria-label="More for ${esc(t.title)}">⋯</button></div></div>`;
   }
   function note(n) {
     const c = catOf(n.category);
@@ -176,7 +176,7 @@
     }
     if (d.star) {
       const t = S.star(st, 'tasks', d.star); save(); render();
-      toast(t.important ? '⭐ Important' : 'Star taken off', () => { S.star(st, 'tasks', t.id); save(); render(); });
+      toast(S.isImportant(st, t) ? '⭐ Important' : 'Star taken off', () => { S.star(st, 'tasks', t.id); save(); render(); });
       return;
     }
     if (d.tmenu) { taskMenu(d.tmenu); return; }
@@ -250,7 +250,7 @@
     if (k === 'tasks') {
       // v1.15: one-line "pills" sheet. Tap a pill to open its choices; notes get the room.
       const mins = [5, 10, 15, 30, 45, 60, 90, 120];
-      const v = {cat: r.category, due: r.due || '', mins: Number(r.estimate_mins) || 0, star: !!r.important};
+      const v = {cat: r.category, due: r.due || '', mins: Number(r.estimate_mins) || 0, star: S.isImportant(st, r)};
       const dueText = x => !x ? 'No date' : x === d(0) ? 'Today' : x === d(1) ? 'Tomorrow' : new Date(x + 'T12:00:00').toLocaleDateString('en-GB', {day: 'numeric', month: 'short'});
       const catOf = n => S.cats(st).find(c => c.name === n) || S.cats(st)[0] || {emoji: '📁', name: n};
       const ch = (on, data, label, cls) => `<button type="button" class="chip${on ? ' on' : ''}${cls ? ' ' + cls : ''}" ${data}>${label}</button>`;
@@ -302,7 +302,8 @@
         q('#fsave').addEventListener('click', () => {
           const title = q('#ft').value.trim();
           if (!title) { q('#ft').focus(); return; }
-          S.edit(st, 'tasks', id, {title, category: v.cat || r.category, due: v.due, estimate_mins: v.mins, details: q('#fn').value.trim(), important: v.star});
+          S.edit(st, 'tasks', id, {title, category: v.cat || r.category, due: v.due, estimate_mins: v.mins, details: q('#fn').value.trim()});
+          S.star(st, 'tasks', id, v.star);                // after the category change, so '' / 'yes' / 'no' is worked out right
           save(); closeSheet(); render(); toast('💾 Saved');
         });
         q('#fdel').addEventListener('click', () => del('tasks', id, r.title));
@@ -312,7 +313,7 @@
         <div class="field"><label for="fx">Note</label><textarea class="inp" id="fx">${esc(r.text)}</textarea></div>
         <div class="field"><span class="lbl">Category</span>${catChips(r.category)}</div>
         <div class="chips" id="revchips"><button type="button" class="chip${r.review_later ? ' on' : ''}" data-v="1">🔖 Review later</button><button type="button" class="chip${r.review_later ? '' : ' on'}" data-v="">Just a note</button></div>
-        <div class="chips"><button type="button" class="chip${r.important ? ' on' : ''}" id="nstar" aria-pressed="${!!r.important}">⭐ Important</button></div>
+        <div class="chips"><button type="button" class="chip${S.isImportant(st, r) ? ' on' : ''}" id="nstar" aria-pressed="${S.isImportant(st, r)}">⭐ Important</button></div>
         <div class="btns"><button class="btn" id="fdel" type="button">🗑️ Delete</button><button class="btn p" id="fsave" type="button">Save</button></div>`, sh => {
         chipPick(sh, 'catchips'); chipPick(sh, 'revchips');
         const ns = sh.querySelector('#nstar');
@@ -321,7 +322,8 @@
           const text = sh.querySelector('#fx').value.trim();
           if (!text) { sh.querySelector('#fx').focus(); return; }
           const rev = !!picked(sh, 'revchips', 'v');
-          S.edit(st, 'notes', id, {text, category: picked(sh, 'catchips', 'c') || r.category, review_later: rev, reviewed: r.review_later && !rev ? true : r.reviewed, important: ns.classList.contains('on')});
+          S.edit(st, 'notes', id, {text, category: picked(sh, 'catchips', 'c') || r.category, review_later: rev, reviewed: r.review_later && !rev ? true : r.reviewed});
+          S.star(st, 'notes', id, ns.classList.contains('on'));
           save(); closeSheet(); render(); toast('💾 Saved');
         });
         sh.querySelector('#fdel').addEventListener('click', () => del('notes', id, r.text));
@@ -414,6 +416,9 @@
       <button type="button" id="mtom">📅 Move to tomorrow</button>
       <button type="button" id="mwk">📅 Move to next week</button>
       <button type="button" id="mdone">${t.done ? '↩️ Not done' : '✅ Tick off'}</button>
+      <button type="button" id="mcat">🗂️ Move to another category<span class="sub">Now in ${esc(t.category)}</span></button>
+      <button type="button" id="mdup">📄 Duplicate</button>
+      <button type="button" id="mcopy">📋 Copy the text<span class="sub">Title and notes</span></button>
       <button type="button" id="mdel">🗑️ Delete<span class="sub">You get a few seconds to undo</span></button>
       </div><button class="btn" id="mback" type="button">Cancel</button>`, sh => {
       const q = x => sh.querySelector(x);
@@ -423,6 +428,32 @@
       q('#mwk').addEventListener('click', () => move(d(7), 'next week'));
       q('#mdone').addEventListener('click', () => { const r = S.tick(st, id); save(); closeSheet(); render(); toast(r.done ? '✅ Done: ' + r.title : 'Moved back to your list', () => { S.tick(st, id); save(); render(); }); });
       q('#mdel').addEventListener('click', () => del('tasks', id, t.title));
+      q('#mcat').addEventListener('click', () => moveCatSheet(id));
+      q('#mdup').addEventListener('click', () => {
+        const n = S.addTask(st, {title: t.title, category: t.category, due: t.due, estimate_mins: t.estimate_mins, details: t.details});
+        if (t.important) { n.important = t.important; }
+        save(); closeSheet(); render();
+        toast('📄 Duplicated', () => { S.remove(st, 'tasks', n.id, 'you'); save(); render(); });
+      });
+      q('#mcopy').addEventListener('click', () => {
+        closeSheet();
+        copyText(t.title + (t.details ? '\n\n' + t.details : '')).then(ok => toast(ok ? '📋 Copied' : '😕 Could not copy'));
+      });
+    });
+  }
+  function moveCatSheet(id) {
+    const t = S.find(st, 'tasks', id);
+    if (!t) return;
+    openSheet(`<h2>Move to…</h2><div class="chips" id="mvchips">${S.cats(st).map(c => `<button type="button" class="chip${c.name === t.category ? ' on' : ''}" data-c="${esc(c.name)}">${esc(c.emoji)} ${esc(c.name)}</button>`).join('')}</div>
+      <button class="btn" id="mvback" type="button">Cancel</button>`, sh => {
+      sh.querySelector('#mvback').addEventListener('click', closeSheet);
+      sh.querySelectorAll('#mvchips .chip').forEach(b => b.addEventListener('click', () => {
+        const was = t.category, to = b.dataset.c;
+        closeSheet();
+        if (to === was) return;
+        S.edit(st, 'tasks', id, {category: to}); save(); render();
+        toast('🗂️ Moved to ' + to, () => { S.edit(st, 'tasks', id, {category: was}); save(); render(); });
+      }));
     });
   }
   function catMenu(name) {
@@ -431,7 +462,7 @@
     const open = st.tasks.filter(t => live(t) && !t.done && t.category === name);
     openSheet(`<h2>${esc(c.emoji)} ${esc(name)}</h2><div class="menu">
       <button type="button" id="kedit">✏️ Edit<span class="sub">Name, icon, colour</span></button>
-      <button type="button" id="kstar">${c.important ? '☆ Not important' : '⭐ Mark important'}<span class="sub">${c.important ? 'Take the ⭐ off this category' : 'Everything in it counts as important'}</span></button>
+      <button type="button" id="kstar">${S.impVal(c.important) === 'yes' ? '☆ Not important' : '⭐ Mark important'}<span class="sub">${S.impVal(c.important) === 'yes' ? 'Take the ⭐ off this category' : 'Every task in it gets a ⭐ (you can still unstar one)'}</span></button>
       <button type="button" id="kall"${open.length ? '' : ' disabled'}>✅ Tick off all<span class="sub">${open.length ? open.length + ' open task' + (open.length === 1 ? '' : 's') : 'Nothing to tick off'}</span></button>
       <button type="button" id="kdel">🗑️ Delete category<span class="sub">Its tasks and notes move to another category</span></button>
       </div><button class="btn" id="kback" type="button">Cancel</button>`, sh => {
@@ -439,7 +470,7 @@
       sh.querySelector('#kedit').addEventListener('click', () => catSheet(name));
       sh.querySelector('#kstar').addEventListener('click', () => {
         const row = S.star(st, 'cats', name); save(); closeSheet(); render();
-        toast(row.important ? '⭐ ' + name + ' is important' : name + ' is not starred now', () => { S.star(st, 'cats', name); save(); render(); });
+        toast(S.impVal(row.important) === 'yes' ? '⭐ ' + name + ' is important' : name + ' is not starred now', () => { S.star(st, 'cats', name); save(); render(); });
       });
       sh.querySelector('#kall').addEventListener('click', () => {
         if (!open.length) return;

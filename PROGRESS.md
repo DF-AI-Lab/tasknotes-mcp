@@ -35,6 +35,12 @@
 - MCP_PIN = only for connecting Claude once. Changing it later does NOT sign Claude out (TOKEN_SECRET does).
 - Claude asks permission once per tool (12 tools). Settings → Connectors → TaskNotes to set "Always allow" for all.
 
+## ⭐ v1.18: star rules + more ⋯ options (7 Nov 2026)
+- Star a category = all its tasks/notes get ⭐. You can still unstar one of them, or star one in a plain category
+- `important` cell: categories `yes` / empty. Tasks + notes: empty = follow category, `yes` = starred, `no` = unstarred
+  (old TRUE/FALSE from v1.16 still read fine). MCP edit_task / edit_note important:false works inside a starred category
+- ⋯ menu adds: 🗂️ Move to another category, 📄 Duplicate, 📋 Copy the text
+
 ## 🗂️ v1.17: task cards (7 Nov 2026)
 - Each task is a card: title, category / date / time pills, notes cut to 2 lines
 - Tap a card with notes = open it (full notes), tap again = close. Only one open at a time.

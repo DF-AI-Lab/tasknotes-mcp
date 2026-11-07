@@ -20,11 +20,12 @@
     secrets: ['id', 'data', 'created', 'updated', 'deleted_at', 'deleted_by'],
   };
   const TABS = {tasks: 'Tasks', notes: 'Notes', cats: 'Categories', secrets: 'Secrets'};
-  const BOOLS = new Set(['done', 'review_later', 'reviewed', 'important']), NUMS = new Set(['estimate_mins']);
+  const BOOLS = new Set(['done', 'review_later', 'reviewed']), NUMS = new Set(['estimate_mins']);
   const keyOf = (kind, r) => kind === 'cats' ? r.name : r.id;
 
   // ---------- rows <-> Sheet values ----------
   function cell(col, v) {
+    if (col === 'important') { const t = String(v == null ? '' : v).trim(); return v === true || /^(true|yes|1|✓)$/i.test(t) ? 'yes' : /^(no|off)$/i.test(t) ? 'no' : ''; }
     if (BOOLS.has(col)) return v === true || /^(true|yes|1|x|✓)$/i.test(String(v == null ? '' : v).trim());
     if (NUMS.has(col)) return Number(v) || 0;
     return v == null ? '' : String(v);

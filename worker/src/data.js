@@ -8,7 +8,7 @@ export const COLS = {
   secrets: ['id', 'data', 'created', 'updated', 'deleted_at', 'deleted_by'],   // 🔐 scrambled on the phone; no Claude tool reads this
 };
 export const TABS = {tasks: 'Tasks', notes: 'Notes', cats: 'Categories', secrets: 'Secrets'};
-const BOOLS = new Set(['done', 'review_later', 'reviewed', 'important']);
+const BOOLS = new Set(['done', 'review_later', 'reviewed']);
 const NUMS = new Set(['estimate_mins']);
 const COLOURS = ['#e0663a', '#2f6fdf', '#7a5af8', '#0f9d76', '#d6409f', '#c99a06', '#0ea5b7', '#64748b'];
 const DAY = 86400000, PURGE_DAYS = 7;
@@ -19,7 +19,9 @@ const nowIso = () => new Date().toISOString();
 const rid = p => p + '_' + Math.random().toString(36).slice(2, 8) + Date.now().toString(36).slice(-4);
 
 // ---------- Sheet rows <-> objects ----------
+export const impVal = v => { const t = String(v ?? '').trim(); return v === true || /^(true|yes|1|✓)$/i.test(t) ? 'yes' : /^(no|off)$/i.test(t) ? 'no' : ''; };
 function cell(col, v) {
+  if (col === 'important') return impVal(v);
   if (BOOLS.has(col)) return v === true || /^(true|yes|1|x|✓)$/i.test(String(v ?? '').trim());
   if (NUMS.has(col)) return Number(v) || 0;
   if (col === 'due') return normalDate(v);
@@ -135,8 +137,10 @@ function getRow(snap, id) {
   throw new Error(`Nothing has the id "${id}". List tasks or notes first to get the right id.`);
 }
 // ⭐ = important: its own star, or its category is starred
-const catStarred = (snap, name) => !!(snap && (snap.cats || []).find(c => live(c) && c.name === name && c.important));
-const isImportant = (snap, r) => !!r.important || catStarred(snap, r.category);
+// task/note important: '' = follow its category, 'yes' = starred anyway, 'no' = not starred even in a starred category
+const catStarred = (snap, name) => !!(snap && (snap.cats || []).find(c => live(c) && c.name === name && impVal(c.important) === 'yes'));
+const isImportant = (snap, r) => { const v = impVal(r.important); return v === 'yes' || (v !== 'no' && catStarred(snap, r.category)); };
+const setStar = (snap, r, want) => { r.important = want === catStarred(snap, r.category) ? '' : want ? 'yes' : 'no'; };
 const star = (snap, r) => isImportant(snap, r) ? '⭐ ' : '';
 const bool = (v) => v === true || /^(true|yes|1)$/i.test(String(v));
 const taskLine = (t, today, snap) => `- [${t.id}] ${t.done ? '✅ ' : ''}${star(snap, t)}${t.title} | ${t.category} | ${when(t.due, today)}${t.estimate_mins ? ' | ' + mins(t.estimate_mins) : ''}${t.details ? ' | 📝 ' + String(t.details).replace(/\s+/g, ' ').slice(0, 80) : ''}${t.deleted_at ? ' | (waiting for delete confirm)' : ''}`;
@@ -164,7 +168,7 @@ export const TOOLS = [
     inputSchema: {type: 'object', required: ['id'], properties: {
       id: str('Task id, like t_abc123'), title: str('New title'), category: str('New category'),
       due: str('New due date (YYYY-MM-DD, today, tomorrow, weekday, or "none")'), estimate_mins: {type: 'number'}, details: str('New notes / details (empty string clears them)'),
-      important: {type: 'boolean', description: 'true = ⭐ important, false = clear the star'}}}},
+      important: {type: 'boolean', description: 'true = ⭐ important, false = not important (works even inside a starred category)'}}}},
   {name: 'complete_task', description: 'Tick a task off (or set done=false to reopen it). Done tasks are hidden but kept.',
     inputSchema: {type: 'object', required: ['id'], properties: {id: str('Task id'), done: {type: 'boolean', description: 'Default true'}}}},
   {name: 'list_notes', description: 'List notes. Each line starts with the [id]. 🔖 = flagged to review later. ⭐ = important (the note itself or its whole category).',
@@ -176,7 +180,7 @@ export const TOOLS = [
     inputSchema: {type: 'object', required: ['text'], properties: {text: str('The note'), category: str('Category name'), review_later: {type: 'boolean'}, important: {type: 'boolean', description: '⭐ Mark it important'}}}},
   {name: 'edit_note', description: 'Change a note. review_later=false marks it reviewed.',
     inputSchema: {type: 'object', required: ['id'], properties: {id: str('Note id, like n_abc123'), text: str('New text'), category: str('New category'), review_later: {type: 'boolean'},
-      important: {type: 'boolean', description: 'true = ⭐ important, false = clear the star'}}}},
+      important: {type: 'boolean', description: 'true = ⭐ important, false = not important (works even inside a starred category)'}}}},
   {name: 'list_categories', description: 'All categories with how many open tasks and notes each has. ⭐ = an important category.', inputSchema: {type: 'object', properties: {}}, annotations: {readOnlyHint: true}},
   {name: 'add_category', description: 'Add a category.',
     inputSchema: {type: 'object', required: ['name'], properties: {name: str('Name'), emoji: str('One emoji (optional)'), colour: str('Hex colour like #2f6fdf (optional)'),
@@ -222,7 +226,8 @@ export function runTool(snap, name, a, tz) {
       const title = String(a.title || '').trim();
       if (!title) throw new Error('A task needs a title.');
       const t = {id: rid('t'), title, category: needCat(snap, a.category), due: parseDue(a.due, today), estimate_mins: Math.max(0, Math.round(Number(a.estimate_mins) || 0)),
-        done: false, done_at: '', created: nowIso(), updated: '', deleted_at: '', deleted_by: '', details: String(a.details || '').trim(), important: bool(a.important)};
+        done: false, done_at: '', created: nowIso(), updated: '', deleted_at: '', deleted_by: '', details: String(a.details || '').trim(), important: ''};
+      if (a.important != null) setStar(snap, t, bool(a.important));
       snap.tasks.push(touch(t));
       return {text: 'Added:\n' + taskLine(t, today, snap), changed: true};
     }
@@ -234,7 +239,7 @@ export function runTool(snap, name, a, tz) {
       if (a.due != null) t.due = parseDue(a.due, today);
       if (a.estimate_mins != null) t.estimate_mins = Math.max(0, Math.round(Number(a.estimate_mins) || 0));
       if (a.details != null) t.details = String(a.details).trim();
-      if (a.important != null) t.important = bool(a.important);
+      if (a.important != null) setStar(snap, t, bool(a.important));
       touch(t);
       return {text: 'Changed:\n' + taskLine(t, today, snap), changed: true};
     }
@@ -257,7 +262,8 @@ export function runTool(snap, name, a, tz) {
     case 'add_note': {
       const text = String(a.text || '').trim();
       if (!text) throw new Error('A note needs some text.');
-      const n = {id: rid('n'), text, category: needCat(snap, a.category), review_later: !!a.review_later, reviewed: false, created: nowIso(), updated: '', deleted_at: '', deleted_by: '', important: bool(a.important)};
+      const n = {id: rid('n'), text, category: needCat(snap, a.category), review_later: !!a.review_later, reviewed: false, created: nowIso(), updated: '', deleted_at: '', deleted_by: '', important: ''};
+      if (a.important != null) setStar(snap, n, bool(a.important));
       snap.notes.push(touch(n));
       return {text: 'Added note:\n' + noteLine(n, snap), changed: true};
     }
@@ -267,13 +273,13 @@ export function runTool(snap, name, a, tz) {
       if (a.text != null) { if (!String(a.text).trim()) throw new Error('The note cannot be empty.'); n.text = String(a.text).trim(); }
       if (a.category != null) n.category = needCat(snap, a.category);
       if (a.review_later != null) { n.review_later = !!a.review_later; if (!n.review_later) n.reviewed = true; }
-      if (a.important != null) n.important = bool(a.important);
+      if (a.important != null) setStar(snap, n, bool(a.important));
       touch(n);
       return {text: 'Changed:\n' + noteLine(n, snap), changed: true};
     }
     case 'list_categories': {
       const cs = snap.cats.filter(live);
-      return {text: cs.length ? cs.map(c => `- ${c.important ? '⭐ ' : ''}${c.emoji || ''} ${c.name}: ${open.filter(t => t.category === c.name).length} open task(s), ${snap.notes.filter(n => live(n) && n.category === c.name).length} note(s)`).join('\n') : 'No categories yet.'};
+      return {text: cs.length ? cs.map(c => `- ${impVal(c.important) === 'yes' ? '⭐ ' : ''}${c.emoji || ''} ${c.name}: ${open.filter(t => t.category === c.name).length} open task(s), ${snap.notes.filter(n => live(n) && n.category === c.name).length} note(s)`).join('\n') : 'No categories yet.'};
     }
     case 'add_category': {
       const nm = String(a.name || '').trim().slice(0, 24);
@@ -281,19 +287,20 @@ export function runTool(snap, name, a, tz) {
       let c = snap.cats.find(x => x.name.toLowerCase() === nm.toLowerCase());
       if (c && live(c)) return {text: `"${c.name}" is already a category. Use edit_category to change it.`};
       const colour = /^#[0-9a-f]{6}$/i.test(a.colour || '') ? a.colour : COLOURS[snap.cats.length % COLOURS.length];
-      if (c) Object.assign(c, {deleted_at: '', emoji: a.emoji || c.emoji, colour, important: bool(a.important)});
-      else { c = {name: nm, colour, emoji: a.emoji || '📁', updated: '', deleted_at: '', important: bool(a.important)}; snap.cats.push(c); }
+      if (c) Object.assign(c, {deleted_at: '', emoji: a.emoji || c.emoji, colour, important: bool(a.important) ? 'yes' : ''});
+      else { c = {name: nm, colour, emoji: a.emoji || '📁', updated: '', deleted_at: '', important: bool(a.important) ? 'yes' : ''}; snap.cats.push(c); }
       touch(c);
-      return {text: `Added category ${c.important ? '⭐ ' : ''}${c.emoji} ${c.name}.`, changed: true};
+      return {text: `Added category ${c.important === 'yes' ? '⭐ ' : ''}${c.emoji} ${c.name}.`, changed: true};
     }
     case 'edit_category': {
       const c = findCat(snap, a.name);
       if (!c || !String(a.name || '').trim()) throw new Error(`There is no category called "${a.name}". Categories: ${snap.cats.filter(live).map(x => x.name).join(', ')}.`);
-      if (a.important != null) c.important = bool(a.important);
+      if (a.important != null) c.important = bool(a.important) ? 'yes' : '';
       if (a.emoji) c.emoji = String(a.emoji).trim();
       if (a.colour != null) { if (!/^#[0-9a-f]{6}$/i.test(a.colour)) throw new Error('Colour must look like #2f6fdf.'); c.colour = a.colour; }
       touch(c);
-      return {text: `Changed category: ${c.important ? '⭐ ' : ''}${c.emoji || ''} ${c.name}${c.important ? ' (important)' : ''}.`, changed: true};
+      const on = c.important === 'yes';
+      return {text: `Changed category: ${on ? '⭐ ' : ''}${c.emoji || ''} ${c.name}${on ? ' (important: all its tasks and notes count as ⭐ unless one is unstarred)' : ''}.`, changed: true};
     }
     case 'delete_item': {
       const [, r] = getRow(snap, a.id);
