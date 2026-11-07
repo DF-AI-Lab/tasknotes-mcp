@@ -19,10 +19,26 @@
 - [x] **Step 2: Worker + Sheet sync**, code in `worker/` (not deployed yet)
 - [x] **Step 3: MCP for Claude**, on the same Worker (not deployed yet)
 - [x] Tests: 14 passing (`node --test tests/*.test.js worker/test/*.test.js`), GitHub Actions runs them
-- [ ] Darren: turn on GitHub Pages (SETUP.md step 1)
-- [ ] Darren: Google robot + Cloudflare + secrets (SETUP.md steps 2-4)
-- [ ] Connect phone + Claude (SETUP.md steps 5-6)
-- [ ] Test on the real phone, then switch to the darrenfawcett1980 Sheet
+- [x] GitHub Pages live (SETUP.md step 1)
+- [x] Google robot + Cloudflare + secrets, Worker deployed (SETUP.md steps 2-4)
+- [x] Claude connected (SETUP.md step 6), tested working 7 Nov
+- [x] Todoist copied into TaskNotes 7 Nov (Todoist left as it is)
+- [ ] Darren: change MCP_PIN back to a strong one + run Deploy Worker (it's a simple test PIN right now)
+- [x] Deploy fixes from `claude/jolly-wozniak-511lt5` merged into main (7 Nov)
+
+## 🚀 Worker live (7 Nov 2026)
+- Address: https://tasknotes.df-ai-lab-hq.workers.dev (shows "TaskNotes Worker v0.2.0 is running")
+- Claude connector URL: https://tasknotes.df-ai-lab-hq.workers.dev/mcp (claude.ai → Settings → Connectors → TaskNotes)
+- Deploy: Actions → Deploy Worker → Run workflow → branch **main**. (Also runs by itself when `worker/` changes on main.)
+- Cloudflare token: the **"Edit Cloudflare Workers"** one is the one in GitHub. Don't delete it.
+- Changing a GitHub secret does nothing until **Deploy Worker** runs again.
+- MCP_PIN = only for connecting Claude once. Changing it later does NOT sign Claude out (TOKEN_SECRET does).
+- Claude asks permission once per tool (12 tools). Settings → Connectors → TaskNotes to set "Always allow" for all.
+
+## 📥 Todoist import (7 Nov 2026)
+- New category 🛒 Shopping. Home tasks → Home, Projects → AI Lab, "Things to look in to" → review-later notes.
+- Long Todoist descriptions became AI Lab notes. Labels went in brackets in task names.
+- Hedge task was "every Saturday" in Todoist: no repeats in TaskNotes yet (idea for IDEAS.md).
 
 ## v1.06: Passport 🛂
 - The old lock (lock.js + lockui.js) is gone. Passport is the lock now (`docs/passport/`, `docs/passport-lock.js`)
@@ -93,7 +109,16 @@
   quick-add box (Task/Note toggle), bottom nav Day / Notes / Review / Done, undo toast.
 
 ## Next step
-Darren follows SETUP.md (Pages → Google robot → Cloudflare → connect phone and Claude), then tests on the phone.
+Change MCP_PIN to a strong one + redeploy.
+
+### 📋 Next session list (Darren, 7 Nov)
+1. ~~**Full merge** of `claude/jolly-wozniak-511lt5` into main~~ ✅ done 7 Nov (deploy fixes + real SHEET_ID now on main)
+2. **Edit categories**: Darren wants to edit them (ask what's missing: rename / emoji / colour / delete / order?)
+3. **No timer lock on the app**: the app should NOT lock after idle. Only the 🔐 Secrets tab keeps its timer
+4. Maybe: repeating tasks (IDEAS.md)
+
+**Setup facts (from 4 Nov):** robot `tasknotes-robot@passport-513517` (Passport project) is shared on the real Sheet.
+Cloudflare = df.ai.lab.hq account.
 
 ## Reference: WMM Lite (the pattern to copy)
 - Repo: DF-AI-Lab/wheres-my-money-lite, live branch `claude/elegant-davinci-h39d2r`, site in `docs/`
