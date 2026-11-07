@@ -2,17 +2,32 @@
    This file keeps the old LockUI names, so app.js hardly changes.
    - Lock screen, passcode, backup codes, fingerprint: Passport (docs/passport/)
    - 🔐 Secrets: opened by the passport's hidden key (your passcode every time)
-   - Stays open: sign in once and it opens straight in, even after closing. No idle timer.
-     Only 🔒 Lock now (Settings) or Sign out make it ask again. 🔐 Secrets keeps its own passcode + 1 min timer.
+   - Stays open: once your passport is on this phone it opens straight in, no passcode, even after closing.
+     Only 🔒 Lock now (Settings) or Sign out make it ask again.
+   - Google's sign-in (1 hour) is kept across closing the app too, so reopening doesn't pop Google up again. 🔐 Secrets keeps its own passcode + 1 min timer.
    - ☁️ Google: the same sign-in as Passport, the Sheet lives in App data - DON'T DELETE / DF…… / Todo */
 (function (root) {
   'use strict';
-  const APP = 'tasknotes', STAY = 'tasknotes-stay-in';
+  const APP = 'tasknotes', LOCKED = 'tasknotes-locked';
+  const GT = 'passport-google-token', GT_KEEP = 'tasknotes-google-token';
   const $ = id => document.getElementById(id);
   const html = document.documentElement;
   let o = null, ready = null;
-  const stay = on => { try { on ? localStorage.setItem(STAY, '1') : localStorage.removeItem(STAY); } catch {} };
-  const staying = () => { try { return localStorage.getItem(STAY) === '1'; } catch { return false; } };
+  // locked = only after 🔒 Lock now or Sign out. Otherwise the app opens straight in.
+  const stay = on => { try { on ? localStorage.removeItem(LOCKED) : localStorage.setItem(LOCKED, '1'); } catch {} };
+  const staying = () => { try { return localStorage.getItem(LOCKED) !== '1'; } catch { return true; } };
+
+  // ☁️ keep Google's 1-hour sign-in when the app is closed (the passport keeps it for this tab only)
+  function keepGoogle() {
+    try { const t = sessionStorage.getItem(GT); if (t) localStorage.setItem(GT_KEEP, t); } catch {}
+  }
+  try {
+    const t = JSON.parse(localStorage.getItem(GT_KEEP) || 'null');
+    if (t && t.exp > Date.now() + 60000 && !sessionStorage.getItem(GT)) sessionStorage.setItem(GT, JSON.stringify(t));
+  } catch {}
+  document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'hidden') keepGoogle(); });
+  root.addEventListener('pagehide', keepGoogle);
+  setInterval(keepGoogle, 30000);
 
   const email = () => Passport.appAccount(APP) || '';
   const me = () => Passport.find(email());
@@ -40,7 +55,7 @@
     // Passport's own "Lock now" button counts too
     $('passport').addEventListener('click', e => { if (e.target.closest && e.target.closest('#lock')) stay(false); }, true);
     ready = fetch('passport/theme.json').then(r => r.json()).then(theme => {
-      PassportUI.start({app: APP, theme, mount: $('passport'), onUnlocked: p => inApp(p), onSignOut: () => { stay(false); o.onSignOut && o.onSignOut(); }});
+      PassportUI.start({app: APP, theme, mount: $('passport'), onUnlocked: p => inApp(p), onSignOut: () => { stay(false); try { localStorage.removeItem(GT_KEEP); } catch {} o.onSignOut && o.onSignOut(); }});
     });
   }
 
