@@ -35,6 +35,16 @@
 - MCP_PIN = only for connecting Claude once. Changing it later does NOT sign Claude out (TOKEN_SECRET does).
 - Claude asks permission once per tool (12 tools). Settings → Connectors → TaskNotes to set "Always allow" for all.
 
+## ⭐ v1.16 / Worker 0.3.0: Important (7 Nov 2026, asked by Orbit)
+- Star a **task** (☆ button next to 🗑️ in the task sheet), a **note** (⭐ Important chip) or a whole **category** (⋯ → ⭐ Mark important)
+- A task/note counts as important if it has its own ⭐ **or** its category has one
+- New `important` column on Tasks, Notes and Categories (added to the Sheet by itself)
+- MCP: ⭐ shows in list_tasks / list_notes / list_categories lines. `important_only: true` on list_tasks + list_notes.
+  `important` on add_task, edit_task, add_note, edit_note, add_category. New tool **edit_category** (13 tools now)
+- list_tasks `search` now looks in the task notes too
+- Dates: Orbit handles dates/times (next 2 weeks only). TaskNotes gives no "far away" warnings, none needed
+- Needs: merge to main → Deploy Worker runs by itself (worker/ changed)
+
 ## 📥 Todoist import (7 Nov 2026)
 - New category 🛒 Shopping. Home tasks → Home, Projects → AI Lab, "Things to look in to" → review-later notes.
 - Long Todoist descriptions became AI Lab notes. Labels went in brackets in task names.

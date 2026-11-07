@@ -14,13 +14,13 @@
 
   // same columns as the Worker (worker/src/data.js), so Claude can read the same Sheet later
   const COLS = {
-    tasks: ['id', 'title', 'category', 'due', 'estimate_mins', 'done', 'done_at', 'created', 'updated', 'deleted_at', 'deleted_by', 'details'],
-    notes: ['id', 'text', 'category', 'review_later', 'reviewed', 'created', 'updated', 'deleted_at', 'deleted_by'],
-    cats: ['name', 'colour', 'emoji', 'updated', 'deleted_at'],
+    tasks: ['id', 'title', 'category', 'due', 'estimate_mins', 'done', 'done_at', 'created', 'updated', 'deleted_at', 'deleted_by', 'details', 'important'],
+    notes: ['id', 'text', 'category', 'review_later', 'reviewed', 'created', 'updated', 'deleted_at', 'deleted_by', 'important'],
+    cats: ['name', 'colour', 'emoji', 'updated', 'deleted_at', 'important'],
     secrets: ['id', 'data', 'created', 'updated', 'deleted_at', 'deleted_by'],
   };
   const TABS = {tasks: 'Tasks', notes: 'Notes', cats: 'Categories', secrets: 'Secrets'};
-  const BOOLS = new Set(['done', 'review_later', 'reviewed']), NUMS = new Set(['estimate_mins']);
+  const BOOLS = new Set(['done', 'review_later', 'reviewed', 'important']), NUMS = new Set(['estimate_mins']);
   const keyOf = (kind, r) => kind === 'cats' ? r.name : r.id;
 
   // ---------- rows <-> Sheet values ----------

@@ -88,13 +88,13 @@
   function addTask(s, f) {
     const row = {id: rid('t'), title: String(f.title || '').trim(), category: catOrFirst(s, f.category).name,
       due: f.due || '', estimate_mins: Number(f.estimate_mins) || 0, done: false, done_at: '', created: nowIso(),
-      updated: '', deleted_at: '', deleted_by: '', details: String(f.details || '').trim()};
+      updated: '', deleted_at: '', deleted_by: '', details: String(f.details || '').trim(), important: !!f.important};
     s.tasks.unshift(row);
     return touch(s, 'tasks', row);
   }
   function addNote(s, f) {
     const row = {id: rid('n'), text: String(f.text || '').trim(), category: catOrFirst(s, f.category).name,
-      review_later: !!f.review_later, reviewed: false, created: nowIso(), updated: '', deleted_at: '', deleted_by: ''};
+      review_later: !!f.review_later, reviewed: false, created: nowIso(), updated: '', deleted_at: '', deleted_by: '', important: !!f.important};
     s.notes.unshift(row);
     return touch(s, 'notes', row);
   }
@@ -119,6 +119,15 @@
     row.reviewed = !row.review_later;
     return touch(s, 'notes', row);
   }
+  // ⭐ important: a task, a note or a whole category. on = true/false, or leave it out to flip it
+  function star(s, kind, id, on) {
+    const row = kind === 'cats' ? cat(s, id) : find(s, kind, id);
+    if (!row) return null;
+    row.important = on == null ? !row.important : !!on;
+    return touch(s, kind, row);
+  }
+  // a task or note counts as important if it has its own ⭐ or its category has one
+  const isImportant = (s, r) => !!r.important || !!(cat(s, r.category) || {}).important;
   function remove(s, kind, id, by) {                     // by: 'you' (straight away) or 'claude' (asks first)
     const row = find(s, kind, id);
     if (!row) return null;
@@ -232,6 +241,8 @@
     [['Shared login for all DF apps', 'AI Lab', true], ['Try reminders v2', 'AI Lab', false], ['Fence panel is loose', 'Home', true],
      ['Ask about Friday rota', 'Work', true], ['Stretch after runs', 'Health', false]]
       .forEach(([text, category, review_later]) => addNote(s, {text, category, review_later}));
+    star(s, 'cats', 'AI Lab', true);
+    star(s, 'tasks', s.tasks.find(x => x.title === 'Send invoice').id, true);
     const t = addTask(s, {title: 'Old test task', category: 'Work', due: d(-5), estimate_mins: 10});
     remove(s, 'tasks', t.id, 'claude');
     s.tasks.reverse(); s.notes.reverse();
@@ -240,7 +251,7 @@
   }
 
   const Store = {DAY, PURGE_DAYS, COLOURS, BUCKETS, empty, starter, demo, ymd, addDays, bucket, dueLabel, fmtMins, parseQuick,
-    live, pendingDelete, shown, cats, cat, catOrFirst, addTask, addNote, edit, tick, flag, remove, undelete, confirmDelete,
+    live, pendingDelete, shown, cats, cat, catOrFirst, addTask, addNote, edit, tick, flag, star, isImportant, remove, undelete, confirmDelete,
     addCat, editCat, removeCat, addSecret, KINDS, purge, outbox, outboxCount, merge, find};
   if (typeof module !== 'undefined' && module.exports) module.exports = Store;
   else root.Store = Store;

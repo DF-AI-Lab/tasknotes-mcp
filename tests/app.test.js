@@ -114,3 +114,18 @@ test('🔐 the secrets key comes from the passport hidden key, so the same passp
   assert.equal((await V.open(await V.keyFrom(hidden.slice()), data)).text, '1066');
   assert.equal(await V.open(await V.keyFrom(crypto.getRandomValues(new Uint8Array(32))), data), null);
 });
+
+test('⭐ star a task, a note or a whole category', () => {
+  const s = S.starter(); s.dirty = {};
+  const t = S.addTask(s, {title: 'A', category: 'Home'});
+  const n = S.addNote(s, {text: 'B', category: 'AI Lab'});
+  assert.equal(S.isImportant(s, t), false);
+  S.star(s, 'tasks', t.id);
+  assert.equal(S.isImportant(s, t), true);
+  S.star(s, 'tasks', t.id);
+  assert.equal(t.important, false);
+  S.star(s, 'cats', 'AI Lab', true);
+  assert.equal(S.isImportant(s, n), true);
+  assert.ok(s.dirty['cats:AI Lab']);
+  assert.equal(S.star(s, 'tasks', 'nope'), null);
+});

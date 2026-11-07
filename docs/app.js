@@ -3,7 +3,7 @@
   'use strict';
   const S = window.Store, $ = id => document.getElementById(id);
   // 🏷️ bump these with every change: VERSION for the live app, DEMO_VERSION for the demo
-  const VERSION = '1.15', DEMO_VERSION = '15';
+  const VERSION = '1.16', DEMO_VERSION = '16';
   const DEMO = new URLSearchParams(location.search).has('demo');
   const VER_LABEL = DEMO ? 'demo.v.' + DEMO_VERSION : 'v.' + VERSION;
   const SKEY = DEMO ? 'tn_demo_state_v1' : 'tn_state_v1';
@@ -124,18 +124,18 @@
     return `<div class="grid${filter ? ' filtering' : ''}">${cs.map(c => {
       const nt = st.tasks.filter(t => live(t) && !t.done && t.category === c.name).length;
       const nn = st.notes.filter(n => live(n) && n.category === c.name).length;
-      return `<div class="tw"><button class="tile${filter === c.name ? ' sel' : ''}" data-cat="${esc(c.name)}" style="background:${col(c.colour)}"><b>${esc(c.emoji)} ${esc(c.name)}</b><small>${nt} task${nt === 1 ? '' : 's'}${nn ? ' · ' + nn + ' note' + (nn === 1 ? '' : 's') : ''}</small></button><button class="tdots" data-catmenu="${esc(c.name)}" aria-label="Options for ${esc(c.name)}">⋯</button></div>`;
+      return `<div class="tw"><button class="tile${filter === c.name ? ' sel' : ''}" data-cat="${esc(c.name)}" style="background:${col(c.colour)}"><b>${c.important ? '⭐ ' : ''}${esc(c.emoji)} ${esc(c.name)}</b><small>${nt} task${nt === 1 ? '' : 's'}${nn ? ' · ' + nn + ' note' + (nn === 1 ? '' : 's') : ''}</small></button><button class="tdots" data-catmenu="${esc(c.name)}" aria-label="Options for ${esc(c.name)}">⋯</button></div>`;
     }).join('')}${cs.length % 2 ? '<button class="tile addc" data-addcat="1">＋ Category</button>' : ''}</div>`;
   }
   function item(t) {
     const c = catOf(t.category), late = t.due && !t.done && t.due < S.ymd(today());
     return `<div class="item${t.done ? ' done' : ''}"><button class="chk" data-tick="${esc(t.id)}" aria-label="${t.done ? 'Not done' : 'Done'}: ${esc(t.title)}">${t.done ? '✓' : ''}</button>
-      <button class="body" data-edit="tasks:${esc(t.id)}"><div class="t">${esc(t.title)}${t.details ? ' <span class="has-notes" aria-label="has notes">📝</span>' : ''}</div><div class="s${late ? ' late' : ''}"><span class="pill" style="background:${col(c.colour)}">${esc(c.name)}</span>${esc(t.done ? 'done ' + new Date(t.done_at || t.updated).toLocaleDateString('en-GB', {day: 'numeric', month: 'short'}) : S.dueLabel(t.due, today()))}</div></button>
+      <button class="body" data-edit="tasks:${esc(t.id)}"><div class="t">${S.isImportant(st, t) ? '<span class="star" aria-label="important">⭐</span> ' : ''}${esc(t.title)}${t.details ? ' <span class="has-notes" aria-label="has notes">📝</span>' : ''}</div><div class="s${late ? ' late' : ''}"><span class="pill" style="background:${col(c.colour)}">${esc(c.name)}</span>${esc(t.done ? 'done ' + new Date(t.done_at || t.updated).toLocaleDateString('en-GB', {day: 'numeric', month: 'short'}) : S.dueLabel(t.due, today()))}</div></button>
       <span class="time">${S.fmtMins(t.estimate_mins)}</span></div>`;
   }
   function note(n) {
     const c = catOf(n.category);
-    return `<div class="sn${n.review_later ? ' rev' : ''}"><em style="color:${n.review_later ? 'var(--ac)' : col(c.colour)}">${n.review_later ? '🔖 REVIEW LATER' : esc(c.name.toUpperCase())}</em>
+    return `<div class="sn${n.review_later ? ' rev' : ''}"><em style="color:${n.review_later ? 'var(--ac)' : col(c.colour)}">${S.isImportant(st, n) ? '⭐ ' : ''}${n.review_later ? '🔖 REVIEW LATER' : esc(c.name.toUpperCase())}</em>
       <button class="body tx" data-edit="notes:${esc(n.id)}">${esc(n.text)}</button>
       <div class="fl"><span>${n.review_later ? esc(c.name) : new Date(n.created).toLocaleDateString('en-GB', {day: 'numeric', month: 'short'})}</span><button class="flagbtn" data-flag="${esc(n.id)}">${n.review_later ? '✓ Reviewed' : '🔖 Later'}</button></div></div>`;
   }
@@ -231,7 +231,7 @@
     if (k === 'tasks') {
       // v1.15: one-line "pills" sheet. Tap a pill to open its choices; notes get the room.
       const mins = [5, 10, 15, 30, 45, 60, 90, 120];
-      const v = {cat: r.category, due: r.due || '', mins: Number(r.estimate_mins) || 0};
+      const v = {cat: r.category, due: r.due || '', mins: Number(r.estimate_mins) || 0, star: !!r.important};
       const dueText = x => !x ? 'No date' : x === d(0) ? 'Today' : x === d(1) ? 'Tomorrow' : new Date(x + 'T12:00:00').toLocaleDateString('en-GB', {day: 'numeric', month: 'short'});
       const catOf = n => S.cats(st).find(c => c.name === n) || S.cats(st)[0] || {emoji: '📁', name: n};
       const ch = (on, data, label, cls) => `<button type="button" class="chip${on ? ' on' : ''}${cls ? ' ' + cls : ''}" ${data}>${label}</button>`;
@@ -248,8 +248,10 @@
         <div class="ts-pop" id="pm" hidden><div class="chips" id="minchips">${mins.map(m => ch(v.mins === m, `data-v="${m}"`, S.fmtMins(m))).join('')}</div>
           <label class="ts-own"><input class="ts-mini" type="number" min="0" step="5" inputmode="numeric" id="fm" value="${v.mins || ''}" placeholder="Other"> min</label></div>
         <textarea class="ts-notes" id="fn" placeholder="Notes" aria-label="Notes">${esc(r.details || '')}</textarea>
-        <div class="ts-foot"><button class="ts-del" id="fdel" type="button" aria-label="Delete task">🗑️</button><button class="btn p" id="fsave" type="button">Save</button></div>`, sh => {
+        <div class="ts-foot"><button class="ts-del" id="fdel" type="button" aria-label="Delete task">🗑️</button><button class="ts-star" id="fstar" type="button"></button><button class="btn p" id="fsave" type="button">Save</button></div>`, sh => {
         const q = x => sh.querySelector(x), pills = sh.querySelectorAll('.ts-pill');
+        const starBtn = () => { const b = q('#fstar'); b.textContent = v.star ? '⭐' : '☆'; b.classList.toggle('on', v.star); b.setAttribute('aria-label', v.star ? 'Important (tap to clear)' : 'Mark important'); b.setAttribute('aria-pressed', String(v.star)); };
+        starBtn(); q('#fstar').addEventListener('click', () => { v.star = !v.star; starBtn(); });
         const paint = () => {
           const c = catOf(v.cat);
           pills[0].textContent = (c.emoji || '📁') + ' ' + c.name;
@@ -281,7 +283,7 @@
         q('#fsave').addEventListener('click', () => {
           const title = q('#ft').value.trim();
           if (!title) { q('#ft').focus(); return; }
-          S.edit(st, 'tasks', id, {title, category: v.cat || r.category, due: v.due, estimate_mins: v.mins, details: q('#fn').value.trim()});
+          S.edit(st, 'tasks', id, {title, category: v.cat || r.category, due: v.due, estimate_mins: v.mins, details: q('#fn').value.trim(), important: v.star});
           save(); closeSheet(); render(); toast('💾 Saved');
         });
         q('#fdel').addEventListener('click', () => del('tasks', id, r.title));
@@ -291,13 +293,16 @@
         <div class="field"><label for="fx">Note</label><textarea class="inp" id="fx">${esc(r.text)}</textarea></div>
         <div class="field"><span class="lbl">Category</span>${catChips(r.category)}</div>
         <div class="chips" id="revchips"><button type="button" class="chip${r.review_later ? ' on' : ''}" data-v="1">🔖 Review later</button><button type="button" class="chip${r.review_later ? '' : ' on'}" data-v="">Just a note</button></div>
+        <div class="chips"><button type="button" class="chip${r.important ? ' on' : ''}" id="nstar" aria-pressed="${!!r.important}">⭐ Important</button></div>
         <div class="btns"><button class="btn" id="fdel" type="button">🗑️ Delete</button><button class="btn p" id="fsave" type="button">Save</button></div>`, sh => {
         chipPick(sh, 'catchips'); chipPick(sh, 'revchips');
+        const ns = sh.querySelector('#nstar');
+        ns.addEventListener('click', () => { const on = !ns.classList.contains('on'); ns.classList.toggle('on', on); ns.setAttribute('aria-pressed', String(on)); });
         sh.querySelector('#fsave').addEventListener('click', () => {
           const text = sh.querySelector('#fx').value.trim();
           if (!text) { sh.querySelector('#fx').focus(); return; }
           const rev = !!picked(sh, 'revchips', 'v');
-          S.edit(st, 'notes', id, {text, category: picked(sh, 'catchips', 'c') || r.category, review_later: rev, reviewed: r.review_later && !rev ? true : r.reviewed});
+          S.edit(st, 'notes', id, {text, category: picked(sh, 'catchips', 'c') || r.category, review_later: rev, reviewed: r.review_later && !rev ? true : r.reviewed, important: ns.classList.contains('on')});
           save(); closeSheet(); render(); toast('💾 Saved');
         });
         sh.querySelector('#fdel').addEventListener('click', () => del('notes', id, r.text));
@@ -386,11 +391,16 @@
     const open = st.tasks.filter(t => live(t) && !t.done && t.category === name);
     openSheet(`<h2>${esc(c.emoji)} ${esc(name)}</h2><div class="menu">
       <button type="button" id="kedit">✏️ Edit<span class="sub">Name, icon, colour</span></button>
+      <button type="button" id="kstar">${c.important ? '☆ Not important' : '⭐ Mark important'}<span class="sub">${c.important ? 'Take the ⭐ off this category' : 'Everything in it counts as important'}</span></button>
       <button type="button" id="kall"${open.length ? '' : ' disabled'}>✅ Tick off all<span class="sub">${open.length ? open.length + ' open task' + (open.length === 1 ? '' : 's') : 'Nothing to tick off'}</span></button>
       <button type="button" id="kdel">🗑️ Delete category<span class="sub">Its tasks and notes move to another category</span></button>
       </div><button class="btn" id="kback" type="button">Cancel</button>`, sh => {
       sh.querySelector('#kback').addEventListener('click', closeSheet);
       sh.querySelector('#kedit').addEventListener('click', () => catSheet(name));
+      sh.querySelector('#kstar').addEventListener('click', () => {
+        const row = S.star(st, 'cats', name); save(); closeSheet(); render();
+        toast(row.important ? '⭐ ' + name + ' is important' : name + ' is not starred now', () => { S.star(st, 'cats', name); save(); render(); });
+      });
       sh.querySelector('#kall').addEventListener('click', () => {
         if (!open.length) return;
         confirmSheet('Tick off all of ' + name + '?', open.length + ' task' + (open.length === 1 ? '' : 's') + ' will be marked done. You get 10 seconds to undo.', 'Tick off all', () => {

@@ -226,3 +226,6 @@ h3.sec button{background:none;border:0;color:var(--m);font:500 11px var(--mono);
 .ts-foot .btn{flex:1;padding:11px}
 .ts-del{background:none;border:1px solid var(--ln);border-radius:14px;padding:10px 14px;font-size:16px}
 .has-notes{font-size:.8em;opacity:.7}
+.star{font-size:.85em}
+.ts-star{background:none;border:1px solid var(--ln);border-radius:14px;padding:10px 14px;font-size:16px;color:var(--m)}
+.ts-star.on{border-color:var(--ac)}
