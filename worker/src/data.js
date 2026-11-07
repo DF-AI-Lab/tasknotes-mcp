@@ -2,7 +2,7 @@
 // A "snapshot" is the whole Sheet as plain objects: {tasks: [...], notes: [...], cats: [...]}.
 
 export const COLS = {
-  tasks: ['id', 'title', 'category', 'due', 'estimate_mins', 'done', 'done_at', 'created', 'updated', 'deleted_at', 'deleted_by'],
+  tasks: ['id', 'title', 'category', 'due', 'estimate_mins', 'done', 'done_at', 'created', 'updated', 'deleted_at', 'deleted_by', 'details'],
   notes: ['id', 'text', 'category', 'review_later', 'reviewed', 'created', 'updated', 'deleted_at', 'deleted_by'],
   cats: ['name', 'colour', 'emoji', 'updated', 'deleted_at'],
   secrets: ['id', 'data', 'created', 'updated', 'deleted_at', 'deleted_by'],   // 🔐 scrambled on the phone; no Claude tool reads this
@@ -134,7 +134,7 @@ function getRow(snap, id) {
   for (const kind of ['tasks', 'notes']) { const r = snap[kind].find(x => x.id === id); if (r) return [kind, r]; }
   throw new Error(`Nothing has the id "${id}". List tasks or notes first to get the right id.`);
 }
-const taskLine = (t, today) => `- [${t.id}] ${t.done ? '✅ ' : ''}${t.title} | ${t.category} | ${when(t.due, today)}${t.estimate_mins ? ' | ' + mins(t.estimate_mins) : ''}${t.deleted_at ? ' | (waiting for delete confirm)' : ''}`;
+const taskLine = (t, today) => `- [${t.id}] ${t.done ? '✅ ' : ''}${t.title} | ${t.category} | ${when(t.due, today)}${t.estimate_mins ? ' | ' + mins(t.estimate_mins) : ''}${t.details ? ' | 📝 ' + String(t.details).replace(/\s+/g, ' ').slice(0, 80) : ''}${t.deleted_at ? ' | (waiting for delete confirm)' : ''}`;
 const noteLine = n => `- [${n.id}] ${n.review_later ? '🔖 ' : ''}${n.text.replace(/\s+/g, ' ')} | ${n.category}${n.deleted_at ? ' | (waiting for delete confirm)' : ''}`;
 const touch = r => { r.updated = nowIso(); return r; };
 
@@ -152,11 +152,11 @@ export const TOOLS = [
     inputSchema: {type: 'object', required: ['title'], properties: {
       title: str('What to do'), category: str('Category name (default: the first one)'),
       due: str('YYYY-MM-DD, today, tomorrow, a weekday, or empty for no date'),
-      estimate_mins: {type: 'number', description: 'How many minutes it takes'}}}},
+      estimate_mins: {type: 'number', description: 'How many minutes it takes'}, details: str('Optional notes / more detail about the task')}}},
   {name: 'edit_task', description: 'Change a task. Only the fields you pass change.',
     inputSchema: {type: 'object', required: ['id'], properties: {
       id: str('Task id, like t_abc123'), title: str('New title'), category: str('New category'),
-      due: str('New due date (YYYY-MM-DD, today, tomorrow, weekday, or "none")'), estimate_mins: {type: 'number'}}}},
+      due: str('New due date (YYYY-MM-DD, today, tomorrow, weekday, or "none")'), estimate_mins: {type: 'number'}, details: str('New notes / details (empty string clears them)')}}},
   {name: 'complete_task', description: 'Tick a task off (or set done=false to reopen it). Done tasks are hidden but kept.',
     inputSchema: {type: 'object', required: ['id'], properties: {id: str('Task id'), done: {type: 'boolean', description: 'Default true'}}}},
   {name: 'list_notes', description: 'List notes. Each line starts with the [id]. 🔖 = flagged to review later.',
@@ -207,7 +207,7 @@ export function runTool(snap, name, a, tz) {
       const title = String(a.title || '').trim();
       if (!title) throw new Error('A task needs a title.');
       const t = {id: rid('t'), title, category: needCat(snap, a.category), due: parseDue(a.due, today), estimate_mins: Math.max(0, Math.round(Number(a.estimate_mins) || 0)),
-        done: false, done_at: '', created: nowIso(), updated: '', deleted_at: '', deleted_by: ''};
+        done: false, done_at: '', created: nowIso(), updated: '', deleted_at: '', deleted_by: '', details: String(a.details || '').trim()};
       snap.tasks.push(touch(t));
       return {text: 'Added:\n' + taskLine(t, today), changed: true};
     }
@@ -218,6 +218,7 @@ export function runTool(snap, name, a, tz) {
       if (a.category != null) t.category = needCat(snap, a.category);
       if (a.due != null) t.due = parseDue(a.due, today);
       if (a.estimate_mins != null) t.estimate_mins = Math.max(0, Math.round(Number(a.estimate_mins) || 0));
+      if (a.details != null) t.details = String(a.details).trim();
       touch(t);
       return {text: 'Changed:\n' + taskLine(t, today), changed: true};
     }

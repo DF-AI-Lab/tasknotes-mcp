@@ -14,7 +14,7 @@
 
   // same columns as the Worker (worker/src/data.js), so Claude can read the same Sheet later
   const COLS = {
-    tasks: ['id', 'title', 'category', 'due', 'estimate_mins', 'done', 'done_at', 'created', 'updated', 'deleted_at', 'deleted_by'],
+    tasks: ['id', 'title', 'category', 'due', 'estimate_mins', 'done', 'done_at', 'created', 'updated', 'deleted_at', 'deleted_by', 'details'],
     notes: ['id', 'text', 'category', 'review_later', 'reviewed', 'created', 'updated', 'deleted_at', 'deleted_by'],
     cats: ['name', 'colour', 'emoji', 'updated', 'deleted_at'],
     secrets: ['id', 'data', 'created', 'updated', 'deleted_at', 'deleted_by'],

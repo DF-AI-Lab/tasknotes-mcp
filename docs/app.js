@@ -3,7 +3,7 @@
   'use strict';
   const S = window.Store, $ = id => document.getElementById(id);
   // 🏷️ bump these with every change: VERSION for the live app, DEMO_VERSION for the demo
-  const VERSION = '1.14', DEMO_VERSION = '14';
+  const VERSION = '1.15', DEMO_VERSION = '15';
   const DEMO = new URLSearchParams(location.search).has('demo');
   const VER_LABEL = DEMO ? 'demo.v.' + DEMO_VERSION : 'v.' + VERSION;
   const SKEY = DEMO ? 'tn_demo_state_v1' : 'tn_state_v1';
@@ -130,7 +130,7 @@
   function item(t) {
     const c = catOf(t.category), late = t.due && !t.done && t.due < S.ymd(today());
     return `<div class="item${t.done ? ' done' : ''}"><button class="chk" data-tick="${esc(t.id)}" aria-label="${t.done ? 'Not done' : 'Done'}: ${esc(t.title)}">${t.done ? '✓' : ''}</button>
-      <button class="body" data-edit="tasks:${esc(t.id)}"><div class="t">${esc(t.title)}</div><div class="s${late ? ' late' : ''}"><span class="pill" style="background:${col(c.colour)}">${esc(c.name)}</span>${esc(t.done ? 'done ' + new Date(t.done_at || t.updated).toLocaleDateString('en-GB', {day: 'numeric', month: 'short'}) : S.dueLabel(t.due, today()))}</div></button>
+      <button class="body" data-edit="tasks:${esc(t.id)}"><div class="t">${esc(t.title)}${t.details ? ' <span class="has-notes" aria-label="has notes">📝</span>' : ''}</div><div class="s${late ? ' late' : ''}"><span class="pill" style="background:${col(c.colour)}">${esc(c.name)}</span>${esc(t.done ? 'done ' + new Date(t.done_at || t.updated).toLocaleDateString('en-GB', {day: 'numeric', month: 'short'}) : S.dueLabel(t.due, today()))}</div></button>
       <span class="time">${S.fmtMins(t.estimate_mins)}</span></div>`;
   }
   function note(n) {
@@ -229,27 +229,62 @@
     if (!r) return;
     const t0 = today(), d = n => S.ymd(S.addDays(t0, n));
     if (k === 'tasks') {
+      // v1.15: one-line "pills" sheet. Tap a pill to open its choices; notes get the room.
       const mins = [5, 10, 15, 30, 45, 60, 90, 120];
-      openSheet(`<h2>Edit task</h2>
-        <div class="field"><label for="ft">Task</label><input class="inp" id="ft" value="${esc(r.title)}"></div>
-        <div class="field"><span class="lbl">Category</span>${catChips(r.category)}</div>
-        <div class="field"><label for="fd">Due</label>
-          <div class="chips" id="duechips">${[['Today', d(0)], ['Tomorrow', d(1)], ['Next week', d(7)], ['No date', '']].map(([l, v]) => `<button type="button" class="chip${r.due === v ? ' on' : ''}" data-v="${v}">${l}</button>`).join('')}</div>
-          <input class="inp" type="date" id="fd" value="${esc(r.due)}"></div>
-        <div class="field"><label for="fm">Time it takes (minutes)</label>
-          <div class="chips" id="minchips">${mins.map(m => `<button type="button" class="chip${Number(r.estimate_mins) === m ? ' on' : ''}" data-v="${m}">${S.fmtMins(m)}</button>`).join('')}</div>
-          <input class="inp" type="number" min="0" step="5" inputmode="numeric" id="fm" value="${Number(r.estimate_mins) || ''}"></div>
-        <div class="btns"><button class="btn" id="fdel" type="button">🗑️ Delete</button><button class="btn p" id="fsave" type="button">Save</button></div>`, sh => {
-        chipPick(sh, 'catchips');
-        sh.querySelectorAll('#duechips .chip').forEach(b => b.addEventListener('click', () => { sh.querySelector('#fd').value = b.dataset.v; sh.querySelectorAll('#duechips .chip').forEach(x => x.classList.toggle('on', x === b)); }));
-        sh.querySelectorAll('#minchips .chip').forEach(b => b.addEventListener('click', () => { sh.querySelector('#fm').value = b.dataset.v; sh.querySelectorAll('#minchips .chip').forEach(x => x.classList.toggle('on', x === b)); }));
-        sh.querySelector('#fsave').addEventListener('click', () => {
-          const title = sh.querySelector('#ft').value.trim();
-          if (!title) { sh.querySelector('#ft').focus(); return; }
-          S.edit(st, 'tasks', id, {title, category: picked(sh, 'catchips', 'c') || r.category, due: sh.querySelector('#fd').value, estimate_mins: Number(sh.querySelector('#fm').value) || 0});
+      const v = {cat: r.category, due: r.due || '', mins: Number(r.estimate_mins) || 0};
+      const dueText = x => !x ? 'No date' : x === d(0) ? 'Today' : x === d(1) ? 'Tomorrow' : new Date(x + 'T12:00:00').toLocaleDateString('en-GB', {day: 'numeric', month: 'short'});
+      const catOf = n => S.cats(st).find(c => c.name === n) || S.cats(st)[0] || {emoji: '📁', name: n};
+      const ch = (on, data, label, cls) => `<button type="button" class="chip${on ? ' on' : ''}${cls ? ' ' + cls : ''}" ${data}>${label}</button>`;
+      const catList = () => S.cats(st).map(c => ch(c.name === v.cat, `data-c="${esc(c.name)}"`, esc(c.emoji) + ' ' + esc(c.name))).join('') + ch(false, 'data-new="1"', '+ New', 'add');
+      openSheet(`<input class="ts-title" id="ft" value="${esc(r.title)}" placeholder="Task" aria-label="Task">
+        <div class="ts-pills" role="group" aria-label="Task details">
+          <button type="button" class="ts-pill" data-pop="pc"></button>
+          <button type="button" class="ts-pill" data-pop="pd"></button>
+          <button type="button" class="ts-pill" data-pop="pm"></button>
+        </div>
+        <div class="ts-pop" id="pc" hidden><div class="chips" id="catchips">${catList()}</div></div>
+        <div class="ts-pop" id="pd" hidden><div class="chips" id="duechips">${[['Today', d(0)], ['Tomorrow', d(1)], ['Next week', d(7)], ['No date', '']].map(([l, x]) => ch(v.due === x, `data-v="${x}"`, l)).join('')}</div>
+          <input class="ts-mini" type="date" id="fd" value="${esc(v.due)}" aria-label="Pick a date"></div>
+        <div class="ts-pop" id="pm" hidden><div class="chips" id="minchips">${mins.map(m => ch(v.mins === m, `data-v="${m}"`, S.fmtMins(m))).join('')}</div>
+          <label class="ts-own"><input class="ts-mini" type="number" min="0" step="5" inputmode="numeric" id="fm" value="${v.mins || ''}" placeholder="Other"> min</label></div>
+        <textarea class="ts-notes" id="fn" placeholder="Notes" aria-label="Notes">${esc(r.details || '')}</textarea>
+        <div class="ts-foot"><button class="ts-del" id="fdel" type="button" aria-label="Delete task">🗑️</button><button class="btn p" id="fsave" type="button">Save</button></div>`, sh => {
+        const q = x => sh.querySelector(x), pills = sh.querySelectorAll('.ts-pill');
+        const paint = () => {
+          const c = catOf(v.cat);
+          pills[0].textContent = (c.emoji || '📁') + ' ' + c.name;
+          pills[1].textContent = '📅 ' + dueText(v.due); pills[1].classList.toggle('dim', !v.due);
+          pills[2].textContent = '⏱ ' + (v.mins ? S.fmtMins(v.mins) : 'Time'); pills[2].classList.toggle('dim', !v.mins);
+          sh.querySelectorAll('#duechips .chip').forEach(b => b.classList.toggle('on', b.dataset.v === v.due));
+          sh.querySelectorAll('#minchips .chip').forEach(b => b.classList.toggle('on', Number(b.dataset.v) === v.mins));
+        };
+        const shut = () => { pills.forEach(p => p.classList.remove('open')); sh.querySelectorAll('.ts-pop').forEach(p => { p.hidden = true; }); };
+        pills.forEach(p => p.addEventListener('click', () => { const was = p.classList.contains('open'); shut(); if (!was) { p.classList.add('open'); q('#' + p.dataset.pop).hidden = false; } }));
+        const wireCats = () => sh.querySelectorAll('#catchips .chip').forEach(b => b.addEventListener('click', () => {
+          if (b.dataset.new) {                          // "+ New" turns into a tiny name box
+            const box = document.createElement('input');
+            box.className = 'ts-mini'; box.placeholder = 'New category'; box.maxLength = 24;
+            b.replaceWith(box); box.focus();
+            const done = () => { const row = box.value.trim() && S.addCat(st, box.value); if (row) { v.cat = row.name; save(); } q('#catchips').innerHTML = catList(); wireCats(); paint(); };
+            box.addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); done(); } else if (e.key === 'Escape') { e.stopPropagation(); box.value = ''; done(); } });
+            box.addEventListener('blur', done, {once: true});
+            return;
+          }
+          v.cat = b.dataset.c; sh.querySelectorAll('#catchips .chip').forEach(x => x.classList.toggle('on', x === b)); paint(); shut();
+        }));
+        wireCats();
+        sh.querySelectorAll('#duechips .chip').forEach(b => b.addEventListener('click', () => { v.due = b.dataset.v; q('#fd').value = v.due; paint(); shut(); }));
+        q('#fd').addEventListener('change', e => { v.due = e.target.value; paint(); });
+        sh.querySelectorAll('#minchips .chip').forEach(b => b.addEventListener('click', () => { v.mins = Number(b.dataset.v); q('#fm').value = v.mins; paint(); shut(); }));
+        q('#fm').addEventListener('input', e => { v.mins = Math.max(0, Math.round(Number(e.target.value) || 0)); paint(); });
+        paint();
+        q('#fsave').addEventListener('click', () => {
+          const title = q('#ft').value.trim();
+          if (!title) { q('#ft').focus(); return; }
+          S.edit(st, 'tasks', id, {title, category: v.cat || r.category, due: v.due, estimate_mins: v.mins, details: q('#fn').value.trim()});
           save(); closeSheet(); render(); toast('💾 Saved');
         });
-        sh.querySelector('#fdel').addEventListener('click', () => del('tasks', id, r.title));
+        q('#fdel').addEventListener('click', () => del('tasks', id, r.title));
       });
     } else {
       openSheet(`<h2>Edit note</h2>
