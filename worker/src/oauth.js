@@ -35,6 +35,7 @@ export function redirectOk(uri) {
     const u = new URL(uri);
     if (u.protocol === 'https:' && /(^|\.)claude\.(ai|com)$/.test(u.hostname)) return true;
     if (u.protocol === 'http:' && (u.hostname === 'localhost' || u.hostname === '127.0.0.1')) return true;   // MCP Inspector / Claude Code
+    if (u.protocol === 'https:' && u.hostname === 'df-ai-lab.github.io') return true;   // DF apps on GitHub Pages (Luna Offline)
     return false;
   } catch (e) { return false; }
 }

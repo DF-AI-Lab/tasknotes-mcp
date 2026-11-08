@@ -185,3 +185,11 @@ test('MCP handles unknown methods and bad messages', async () => {
   assert.equal((await handle({jsonrpc: '2.0', id: 9, method: 'nope'}, env)).error.code, -32601);
   assert.equal(await handle({jsonrpc: '2.0', method: 'notifications/cancelled'}, env), null);
 });
+
+test('DF apps on GitHub Pages may connect (Luna Offline); other sites may not', async () => {
+  const {redirectOk} = await import('../src/oauth.js');
+  assert.equal(redirectOk('https://df-ai-lab.github.io/Luna_offline/'), true);
+  assert.equal(redirectOk('http://df-ai-lab.github.io/Luna_offline/'), false);
+  assert.equal(redirectOk('https://df-ai-lab.github.io.evil.example/'), false);
+  assert.equal(redirectOk('https://evil.github.io/'), false);
+});
