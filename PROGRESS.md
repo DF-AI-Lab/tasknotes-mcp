@@ -139,6 +139,20 @@
 - Mocks: https://claude.ai/artifact/B6mLMuojAdb2BQMxThzfzK
 - Branch `claude/confident-gates-3t4exr`, needs merging to main to show on the phone
 
+## 🎨 Demo 2 round 4 (11 Nov 2026), live on main
+- Edit sheet like the live app: title, 3 pills (Category / Date / Time), fixed-height notes, options slide over the notes (no jump)
+- Short 36px buttons, red bin on the right, + to add a category
+- Tasks open into one big card ("Big tick" design: colour outline, big pulsing tick, Later, pin, ⋮). Notes use the same card
+- Scrollbar gone, small arrow in the corner when there is more
+- Notes filters on one line as text tabs: All fixed, bookmark = Review later, categories scroll, search icon on the right
+- 🔐 Secrets tab is now **Vault** with Secrets / Documents tabs, a search box, and cards (Show/Hide, copy, Open)
+- + on Vault: New secret sheet (name, Password/PIN/Code, secret) and New document sheet (name, category, choose file)
+- + in the edit sheet attaches documents to a task or note (shows on the card)
+- Header spacing halved, line under the filters removed
+- Day change is smooth: the highlight glides, the list slides in
+- Demo only: vault items and files are pretend (names and sizes, not real files)
+- Phone shows an old copy? Add `?v=8` to the link or close and reopen
+
 ## Next step
 Change MCP_PIN to a strong one + redeploy.
 
