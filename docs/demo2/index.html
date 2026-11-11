@@ -130,7 +130,20 @@ svg{width:20px;height:20px;fill:none;stroke:currentColor;stroke-width:1.7;stroke
 .row.ticking .tick{background:var(--accent);border-color:var(--accent);color:var(--on-accent);animation:pop .4s cubic-bezier(.3,1.8,.5,1)}
 @keyframes pop{50%{transform:scale(1.3)}}
 .row.lift{z-index:3;margin:0 -16px;padding:0 16px;width:auto;border-radius:10px;background:#2a2b31;border-bottom-color:transparent;box-shadow:0 14px 28px -8px rgba(0,0,0,.65);transition:background .3s,box-shadow .3s}
-.row .pin{width:36px;height:44px;margin-right:-8px;border-radius:10px;flex:none}
+.row .pin{width:34px;height:44px;border-radius:10px;flex:none}
+.row .more{width:30px;height:44px;margin-right:-8px;display:grid;place-items:center;color:var(--muted);flex:none;border-radius:10px}
+.row .more svg,.big .more svg{width:18px;height:18px}
+.row.big{display:block;margin:6px -10px;padding:16px 16px 14px;border-radius:12px;border-bottom:0;background:var(--hero),#2a2b30;
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.16),0 16px 28px -16px rgba(0,0,0,.8);min-height:0}
+.row.big + .row{border-top:0}
+.big-in{display:flex;flex-direction:column;gap:10px}
+.big .now-top{display:flex;justify-content:space-between;align-items:center;min-height:32px}
+.big .acts{display:flex;gap:2px;align-items:center;margin-right:-8px}
+.big .more{width:36px;height:36px;display:grid;place-items:center;color:var(--muted);border-radius:50%}
+.big h2{font:700 28px/1.08 var(--display);letter-spacing:-.02em;margin:0;overflow-wrap:anywhere;text-align:left}
+.big p{margin:0;color:var(--muted);font-size:14px;line-height:1.45;text-align:left}
+.big .open{display:flex;flex-direction:column;gap:8px;width:100%;padding:0;min-height:0;align-items:flex-start}
+.big .btns{margin-top:6px}
 .row .pin.on{background:none;color:var(--text)}
 .pin.on svg{fill:currentColor}
 .pin.pop svg{animation:pop .4s cubic-bezier(.3,1.8,.5,1)}
@@ -375,11 +388,22 @@ function metaHtml(r,extra){
   if(extra)parts.push(extra);
   return '<span class="meta">'+parts.join(' · ')+'</span>';
 }
+var curOpen=null,openPick;
+function bigRow(r){
+  var m=r.estimate_mins;
+  return '<div class="row big" data-fid="r'+r.id+'"><div class="big-in"><div class="now-top"><span class="meta">'+[r.category?dotHtml(r.category)+esc(r.category):'',m?(m<60?m+' min':fmtMins(m)):'',r.time?'<span class="mono">'+esc(r.time)+'</span>':''].filter(Boolean).join(' · ')+'</span>'+
+    '<span class="acts"><button class="pin'+(pinned(r)?' on':'')+'" data-act="pin" data-id="'+r.id+'" aria-label="'+(pinned(r)?'Unpin':'Pin')+'" aria-pressed="'+pinned(r)+'">'+ico('pin')+'</button>'+
+    '<button class="more" data-act="open" data-id="'+r.id+'" aria-label="Edit">'+ico('dots')+'</button></span></div>'+
+    '<button class="open" data-act="fold" data-id="'+r.id+'" aria-expanded="true"><h2>'+esc(r.title)+'</h2>'+(r.details?'<p>'+esc(r.details)+'</p>':'')+'</button>'+
+    '<div class="btns"><button class="btn" data-act="later" data-id="'+r.id+'">Later</button><button class="btn primary" data-act="tick" data-id="'+r.id+'">Done</button></div></div></div>';
+}
 function taskRow(r,extra){
+  if(!r.done&&r.id===curOpen)return bigRow(r);
   var end=r.done?doneTime(r):fmtMins(r.estimate_mins);
   return '<div class="row'+(r.done?' isdone':'')+'" data-fid="r'+r.id+'"><button class="tickbtn" data-act="tick" data-id="'+r.id+'" aria-label="'+(r.done?'Undo':'Done')+'"><span class="tick'+(r.done?' on':'')+'">'+(r.done?ico('tick'):'')+'</span></button>'+
-    '<button class="open" data-act="open" data-id="'+r.id+'"><span class="main"><b><span class="ttl">'+esc(r.title)+'</span></b>'+metaHtml(r,extra)+'</span><span class="end">'+end+'</span></button>'+
-    (r.done?'':'<button class="pin'+(pinned(r)?' on':'')+'" data-act="pin" data-id="'+r.id+'" aria-label="'+(pinned(r)?'Unpin':'Pin')+'" aria-pressed="'+pinned(r)+'">'+ico('pin')+'</button>')+'</div>';
+    '<button class="open" data-act="'+(r.done?'open':'expand')+'" data-id="'+r.id+'"'+(r.done?'':' aria-expanded="false"')+'><span class="main"><b><span class="ttl">'+esc(r.title)+'</span></b>'+metaHtml(r,extra)+'</span><span class="end">'+end+'</span></button>'+
+    (r.done?'':'<button class="pin'+(pinned(r)?' on':'')+'" data-act="pin" data-id="'+r.id+'" aria-label="'+(pinned(r)?'Unpin':'Pin')+'" aria-pressed="'+pinned(r)+'">'+ico('pin')+'</button>'+
+      '<button class="more" data-act="open" data-id="'+r.id+'" aria-label="Edit">'+ico('dots')+'</button>')+'</div>';
 }
 function doneTime(r){
   var d=new Date(r.done_at||r.updated);
@@ -424,16 +448,10 @@ function dayScreen(){
       letter+'<b>'+d.getDate()+'</b></button>';
   }).join('')+'</nav>';
 
-  var now=isToday?ordered(left)[0]:null,out=[h,strip];
-  if(isToday){
-    if(now){
-      var m=now.estimate_mins;
-      out.push('<section class="now" aria-label="Now"><div class="now-top"><span class="meta">'+[now.category?dotHtml(now.category)+esc(now.category):'',m?(m<60?m+' min':fmtMins(m)):'',now.time?'<span class="mono">'+esc(now.time)+'</span>':''].filter(Boolean).join(' · ')+'</span>'+
-        '<button class="pin'+(pinned(now)?' on':'')+'" data-act="pin" data-id="'+now.id+'" aria-label="Pin" aria-pressed="'+pinned(now)+'">'+ico('pin')+'</button></div>'+
-        '<button class="open" data-act="open" data-id="'+now.id+'"><h2>'+esc(now.title)+'</h2>'+(now.details?'<p>'+esc(now.details)+'</p>':'')+'</button>'+
-        '<div class="btns"><button class="btn" data-act="later" data-id="'+now.id+'">Later</button><button class="btn primary" data-act="tick" data-id="'+now.id+'">Done</button></div></section>');
-    }else out.push('<p class="quiet">'+(total?'All done for today':'Nothing planned today')+'</p>');
-  }
+  var now=null,out=[h,strip];
+  var openable=function(id){var r=id&&findItem(id);return r&&!r.done&&live(r)&&isTask(r)};
+  curOpen=openPick===null?null:openable(openPick)?openPick:(isToday&&ordered(left)[0]?ordered(left)[0].id:null);
+  if(isToday&&!left.length)out.push('<p class="quiet">'+(total?'All done for today':'Nothing planned today')+'</p>');
   if(isToday){
     var late=all.filter(function(r){return !r.done&&r.due&&r.due<ts&&!pinned(r)}).sort(function(a,b){return a.due.localeCompare(b.due)});
     if(late.length){
@@ -448,7 +466,7 @@ function dayScreen(){
     out.push(panel(pins.map(function(r){return isTask(r)?taskRow(r,esc(cap(dueLabel(dayKey(r),t)))):noteRow(r)})));
   }
   var then=ordered(dayTasks.filter(function(r){return r!==now&&!r.done})).concat(dayTasks.filter(function(r){return r.done}).sort(function(a,b){return (a.done_at||'').localeCompare(b.done_at||'')}));
-  if(then.length){out.push(label('Then'));out.push(panel(then.map(function(r){return taskRow(r)})))}
+  if(then.length){out.push(label(isToday?'Today':'Tasks'));out.push(panel(then.map(function(r){return taskRow(r)})))}
   else if(!isToday)out.push('<p class="quiet">Nothing planned</p>');
   return out.join('');
 }
@@ -537,12 +555,21 @@ var still=function(){return window.matchMedia&&matchMedia('(prefers-reduced-moti
 function flip(fn,liftId){
   if(still()||!Element.prototype.animate){fn();return}
   var before={};
-  Array.prototype.forEach.call($scroll.querySelectorAll('[data-fid]'),function(el){before[el.getAttribute('data-fid')]=el.getBoundingClientRect().top});
+  Array.prototype.forEach.call($scroll.querySelectorAll('[data-fid]'),function(el){var q=el.getBoundingClientRect();before[el.getAttribute('data-fid')]={t:q.top,h:q.height,big:el.classList.contains('big')}});
   fn();
   Array.prototype.forEach.call($scroll.querySelectorAll('[data-fid]'),function(el){
-    var id=el.getAttribute('data-fid'),b=before[id];
-    if(b==null){el.animate([{opacity:0,transform:'scale(.97)'},{opacity:1,transform:'none'}],{duration:320,easing:'ease-out'});return}
-    var dy=b-el.getBoundingClientRect().top,lift=id===liftId;
+    var id=el.getAttribute('data-fid'),o=before[id];
+    if(o==null){el.animate([{opacity:0,transform:'scale(.97)'},{opacity:1,transform:'none'}],{duration:320,easing:'ease-out'});return}
+    var b=o.t,q=el.getBoundingClientRect(),dy=b-q.top,lift=id===liftId,big=el.classList.contains('big');
+    if(Math.abs(q.height-o.h)>2||big!==o.big){
+      el.style.overflow='hidden';
+      var ez='cubic-bezier(.32,1.15,.5,1)';
+      var a2=el.animate([{transform:'translateY('+dy+'px)',height:o.h+'px'},{transform:'none',height:q.height+'px'}],{duration:480,easing:ez});
+      a2.onfinish=function(){el.style.overflow=''};
+      var inner=el.querySelector(big?'.big-in':'.open');
+      if(inner)inner.animate([{opacity:0},{opacity:0,offset:big?.25:.1},{opacity:1}],{duration:big?420:300,easing:'ease-out'});
+      return;
+    }
     if(Math.abs(dy)<1&&!lift)return;
     if(lift)el.classList.add('lift');
     var a=el.animate(lift?[{transform:'translateY('+dy+'px) scale(1.03)'},{transform:'scale(1.03)',offset:.7},{transform:'none'}]
@@ -692,11 +719,13 @@ document.addEventListener('click',function(e){
   var act=el.getAttribute('data-act'),id=el.getAttribute('data-id'),v=el.getAttribute('data-v');
   switch(act){
     case 'tab':goTab(v);break;
-    case 'day':picked=v;render();break;
+    case 'day':picked=v;openPick=undefined;render();break;
     case 'tick':tick(id);break;
     case 'later':later(id);break;
     case 'pin':togglePin(id);break;
     case 'open':openSheet(id);break;
+    case 'expand':flip(function(){openPick=id;render()});break;
+    case 'fold':flip(function(){openPick=null;render()});break;
     case 'add':openSheet(null);break;
     case 'undo':var u=toastUndo;hideToast();if(u)u();break;
     case 'nfreview':nf.review=!nf.review;render();break;
