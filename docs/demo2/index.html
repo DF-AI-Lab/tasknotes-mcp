@@ -185,6 +185,8 @@ svg{width:20px;height:20px;fill:none;stroke:currentColor;stroke-width:1.7;stroke
 .filters .sep{display:none}
 .vbar .filters{flex:none;padding-right:0;-webkit-mask-image:none;mask-image:none}
 .vsearch{flex:1;min-width:0;display:flex;align-items:center;gap:6px;height:30px;margin:0 var(--gutter) 1px auto;max-width:170px;padding:0 10px;border-radius:9px;background:rgba(255,255,255,.06);color:var(--muted)}
+.sheet .vsearch.vsec{flex:none;height:46px;margin:2px 0 6px;max-width:none;padding:0 14px;gap:10px;border-radius:12px}
+.vsearch.vsec input{font-size:16px}
 .vsearch.wide{max-width:none;margin:0 0 0 0}
 .nsbtn{flex:none;width:32px;height:32px;margin-right:calc(var(--gutter) - 6px);display:grid;place-items:center;color:var(--muted);border-radius:9px}
 .nsbtn:hover{color:var(--text)}
@@ -757,6 +759,16 @@ function drawerHtml(){
 function fsize(n){return n>1048576?(n/1048576).toFixed(1)+' MB':Math.max(1,Math.round(n/1024))+' KB'}
 function filesHtml(){return (sh.f.files||[]).map(function(x,i){return '<span class="fchip">'+ico('file')+'<b>'+esc(x.name)+'</b><button data-act="unattach" data-v="'+i+'" aria-label="Remove '+esc(x.name)+'">'+ico('x')+'</button></span>'}).join('')}
 function pickFile(cb){var i=document.createElement('input');i.type='file';i.multiple=true;i.style.cssText='position:fixed;left:-999px;opacity:0';document.body.appendChild(i);i.onchange=function(){cb(Array.prototype.map.call(i.files,function(f){return {name:f.name,size:f.size}}));i.remove()};i.click()}
+function openSecret(){
+  sh=null;$sheet.setAttribute('aria-label','New secret');
+  $sheet.innerHTML='<div class="grab" aria-hidden="true"></div>'+
+    '<input class="tline" id="v-name" placeholder="What is it for?" autocomplete="off" maxlength="80" aria-label="Name">'+
+    '<div class="chips pills3">'+['Password','PIN','Code'].map(function(t,i){return '<button class="chip'+(i?'':' on')+'" data-act="vtype" data-v="'+t+'">'+t+'</button>'}).join('')+'</div>'+
+    '<label class="vsearch wide vsec">'+ico('lock')+'<input id="v-val" type="password" placeholder="The secret" autocomplete="off" aria-label="The secret"></label>'+
+    '<div class="sbar"><button class="btn primary" data-act="vsave">Save</button></div>';
+  $scrim.classList.add('show');$sheet.classList.add('show');
+  setTimeout(function(){var t=document.getElementById('v-name');if(t)t.focus()},230);
+}
 function headText(){
   var f=sh.f;return (sh.id?'Edit ':'New ')+(isTask(f)?'task':'note');
 }
@@ -851,7 +863,7 @@ document.addEventListener('click',function(e){
     case 'fold':flip(function(){openPick=null;render()});break;
     case 'add':
       if(screen==='secrets'&&vf==='docs'){pickFile(function(l){l.forEach(function(x,k){VAULT.docs.unshift({id:'d'+Date.now()+k,title:x.name.replace(/\.[^.]+$/,''),meta:(x.name.split('.').pop()||'File').toUpperCase()+', '+fsize(x.size),cat:'Home'})});render();toast(l.length>1?l.length+' documents added':'Document added')});break}
-      if(screen==='secrets'){toast('Adding secrets comes in the live app');break}
+      if(screen==='secrets'){openSecret();break}
       openSheet(null);break;
     case 'attach':pickFile(function(l){sh.f.files=(sh.f.files||[]).concat(l);document.getElementById('files').innerHTML=filesHtml()});break;
     case 'unattach':sh.f.files.splice(+v,1);document.getElementById('files').innerHTML=filesHtml();break;
@@ -878,6 +890,10 @@ document.addEventListener('click',function(e){
     case 'refresh':if(upd)location.reload();else refresh(el);break;
     case 'close':closeSheet();break;
     case 'save':saveSheet();break;
+    case 'vtype':var vs=document.querySelectorAll('[data-act="vtype"]');vs.forEach(function(b){b.classList.toggle('on',b===el)});break;
+    case 'vsave':var nm=document.getElementById('v-name').value.trim(),vv=document.getElementById('v-val').value;if(!nm||!vv)break;
+      var ty=document.querySelector('[data-act="vtype"].on');VAULT.secrets.unshift({id:'s'+Date.now(),title:nm,meta:ty?ty.getAttribute('data-v'):'Password',val:vv,cat:'Home'});
+      closeSheet();render();toast('Secret saved');break;
     case 'delete':deleteSheet();break;
     case 'pill':
       if(v==='pin'){sh.f.important=pinned(sh.f)?'':'yes';refreshPills()}
