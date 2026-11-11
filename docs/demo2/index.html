@@ -184,13 +184,14 @@ textarea.field{font:400 15px/1.45 var(--font);min-height:96px}
 .sheet .nline{width:100%;background:none;border:0;border-bottom:1px solid var(--edge);color:var(--text);font:400 15px/1.45 var(--font);padding:4px 0 14px;min-height:120px;resize:none;outline:none}
 .sheet .nline::placeholder{color:var(--muted)}
 .pills3{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
-.pills3 .chip{justify-content:center;width:100%;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.pills3 .chip{height:36px;justify-content:center;width:100%;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .sbar{display:flex;gap:10px;align-items:center}
-.ib{width:46px;height:44px;flex:none;border-radius:13px;display:grid;place-items:center;color:var(--muted);background:var(--surface);box-shadow:inset 0 0 0 1px var(--edge)}
-.ib svg{width:20px;height:20px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+.ib{width:42px;height:36px;flex:none;border-radius:11px;display:grid;place-items:center;color:var(--muted);background:var(--surface);box-shadow:inset 0 0 0 1px var(--edge)}
+.ib svg{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
 .ib.on{color:var(--text);box-shadow:inset 0 0 0 1px rgba(255,255,255,.45)}
 .ib.on[data-act="spin"] svg{fill:currentColor}
-.sbar .btn.primary{flex:1;height:44px;min-height:44px}
+.sbar .btn.primary{flex:1;height:36px;min-height:36px}
+.ib.del{color:#ff5a5f}
 .dt{height:44px;border:0;border-radius:var(--r-pill);background:var(--surface-2);color:var(--text);font:500 14px var(--font);padding:0 16px;min-width:0}
 .sw{width:50px;height:30px;border-radius:var(--r-pill);background:var(--surface-2);position:relative;flex:none;transition:background .15s}
 .sw i{position:absolute;top:3px;left:3px;width:24px;height:24px;border-radius:50%;background:var(--muted);transition:transform .15s,background .15s}
@@ -608,17 +609,20 @@ function renderSheet(){
     '<input class="tline" id="f-title" data-f="title" placeholder="What is it?" autocomplete="off" maxlength="160" value="'+esc(f.title)+'" aria-label="Title">'+
     '<div class="chips pills3" id="pills">'+pillsHtml()+'</div><div id="drawer">'+drawerHtml()+'</div>'+
     '<textarea class="nline" id="f-details" data-f="details" placeholder="Notes" rows="4" aria-label="Notes">'+esc(f.details)+'</textarea>'+
-    '<div class="sbar" id="sbar">'+sbarHtml()+'<button class="btn primary" data-act="save" id="save"'+(f.title.trim()?'':' disabled')+'>Save</button></div>';
+    '<div class="sbar" id="sbar">'+sbarHtml()+'<button class="btn primary" data-act="save" id="save"'+(f.title.trim()?'':' disabled')+'>Save</button>'+delHtml()+'</div>';
 }
 function sbarHtml(){
   var f=sh.f,ib=function(act,on,icon,label){return '<button class="ib'+(on?' on':'')+'" data-act="'+act+'" aria-label="'+label+'"'+(act==='delete'?'':' aria-pressed="'+on+'"')+'>'+ico(icon)+'</button>'};
-  return (sh.id?ib('delete',false,'trash','Delete'):'')+ib('spin',pinned(f),'pin','Pin to top')+ib('needs',!!f.needs,'circle','Needs doing')+
+  return ib('spin',pinned(f),'pin','Pin to top')+ib('needs',!!f.needs,'circle','Needs doing')+
     (isTask(f)?'':ib('review',!!f.review_later,'flag','Review later'));
+}
+function delHtml(){
+  return sh.id?'<button class="ib del" data-act="delete" aria-label="Delete">'+ico('trash')+'</button>':'';
 }
 function refreshPills(){
   document.getElementById('pills').innerHTML=pillsHtml();
   document.getElementById('sh-label').textContent=headText();
-  var sb=document.getElementById('sbar');if(sb){sb.querySelectorAll('.ib').forEach(function(b){b.remove()});sb.insertAdjacentHTML('afterbegin',sbarHtml())}
+  var sb=document.getElementById('sbar');if(sb){sb.querySelectorAll('.ib:not(.del)').forEach(function(b){b.remove()});sb.insertAdjacentHTML('afterbegin',sbarHtml())}
 }
 function saveSheet(){
   if(!sh)return;
