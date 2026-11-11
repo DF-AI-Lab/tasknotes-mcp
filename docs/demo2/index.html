@@ -131,9 +131,10 @@ svg{width:20px;height:20px;fill:none;stroke:currentColor;stroke-width:1.7;stroke
 .link{height:44px;color:var(--muted);font-size:13px;text-align:center;width:100%}
 
 /* ===== BOTTOM BAR ===== */
-.bar::before{content:"";position:absolute;left:0;right:0;bottom:100%;height:48px;background:linear-gradient(to bottom,rgba(16,17,20,0),var(--bg));pointer-events:none}
+.step{position:absolute;left:50%;bottom:calc(100% - 2px);width:96px;height:26px;transform:translateX(-50%);background:var(--bg);border:1px solid var(--glow);border-bottom:0;border-radius:18px 18px 0 0;pointer-events:none}
+.bar::before{content:"";position:absolute;left:0;right:0;bottom:calc(100% + 1px);height:48px;background:linear-gradient(to bottom,rgba(16,17,20,0),var(--bg));pointer-events:none}
 .bar{position:relative;flex:none;display:grid;grid-template-columns:1fr 1fr 64px 1fr 1fr;align-items:center;padding:8px 10px calc(14px + env(safe-area-inset-bottom));
-  border-top:1px solid var(--line);background:rgba(16,17,20,.92);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px)}
+  border-top:1px solid var(--glow);background:rgba(16,17,20,.92);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px)}
 .tab{height:44px;font-size:14px;font-weight:500;color:var(--muted);text-align:center}
 .tab.on{color:var(--text);font-weight:700}
 .add{position:relative;z-index:1;width:54px;height:54px;border-radius:50%;background:var(--accent);color:var(--on-accent);display:grid;place-items:center;justify-self:center;margin-top:-22px;
@@ -186,7 +187,7 @@ textarea.field{font:400 15px/1.45 var(--font);min-height:96px}
 
 <main class="app">
   <div class="scroll" id="scroll"></div>
-  <nav class="bar" aria-label="Screens">
+  <nav class="bar" aria-label="Screens"><span class="step" aria-hidden="true"></span>
     <button class="tab" data-act="tab" data-v="day">Day</button>
     <button class="tab" data-act="tab" data-v="notes">Notes</button>
     <button class="add" data-act="add" aria-label="Add"><svg><use href="#i-plus"/></svg></button>
