@@ -30,7 +30,8 @@ self.addEventListener('fetch', e => {
     e.respondWith((async () => {
       try {
         const r = await fetch(req, {cache: 'no-cache'});                    // always check for a newer page
-        if (r.ok) { const c = await caches.open(CACHE); c.put('./', r.clone()); }
+        const scope = new URL(self.registration.scope).pathname;               // only the app page itself, never /next/ or /demo2/
+        if (r.ok && (url.pathname === scope || url.pathname === scope + 'index.html')) { const c = await caches.open(CACHE); c.put('./', r.clone()); }
         return r;
       } catch (err) {
         return (await caches.match('./', {ignoreSearch: true})) || (await caches.match('index.html', {ignoreSearch: true})) || Response.error();

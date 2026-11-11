@@ -153,6 +153,19 @@
 - Demo only: vault items and files are pretend (names and sizes, not real files)
 - Phone shows an old copy? Add `?v=8` to the link or close and reopen
 
+## 🆕 New look on the live app (11 Nov 2026), at /next/
+
+- **Where:** `docs/next/`. The live app at `/` is untouched.
+- **How:** the Demo 2 skin on the real insides (store, Google Sheet sync, Passport, Vault). Same storage, so the same data.
+- **Day, Notes, Done:** real tasks and notes. Claude's delete requests show at the top of Day.
+- **Notes:** first line is the title, the rest is the body (still one `text` field, so the Sheet is unchanged).
+- **Vault:** passcode keypad, then Secrets with Password / PIN / Code. Documents show "coming soon" (they need Drive storage).
+- **Settings:** name, free time, categories (colours), Google account, fingerprint, Passport, lock, invite, download, demo, back to old look.
+- **Passport:** new theme in `docs/next/passport/theme.json`.
+- **Safe bits:** `/next/` has its own offline cache (`tnnext-`). The live `sw.js` no longer saves other pages (demo2, next) as its offline copy.
+- **Not in yet:** file attachments and Documents (need Drive), task time-of-day.
+- **Backup:** the live app before this is commit `dffee80`.
+
 ## Next step
 Change MCP_PIN to a strong one + redeploy.
 
