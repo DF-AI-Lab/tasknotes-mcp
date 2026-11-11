@@ -218,3 +218,9 @@ Cloudflare = df.ai.lab.hq account.
 - v.1.11 / demo.v.11: stays signed in. No 5 min lock. Only 🔒 Lock now or Sign out ask for the passcode again. 🔐 Secrets still asks every time.
 
 - New icon (TN with red/cyan edges and green dot) for /next/: install icons, Passport logo, header. Live app icons untouched.
+
+## Swapped in (11 Nov 2026)
+- The new look is now the main app at /tasknotes-mcp/ (version 2.0).
+- Old look kept at /tasknotes-mcp/old/ (Settings > Back to the old look).
+- /next/ now just redirects to the main app and removes its own copy.
+- Same data, same Passport, same Google Sheet: nothing moved.

@@ -1,8 +1,10 @@
 /* TaskNotes - the service worker: keeps the app files on the phone so it opens with no internet.
-   Bump VERSION with every app version. */
-const VERSION = '1.18';
+   Bump VERSION with every change. */
+const VERSION = '2.0';
 const CACHE = 'tasknotes-' + VERSION;
-const FILES = ['./', 'index.html', 'app.css', 'app.js', 'store.js', 'vault.js', 'passport-lock.js', 'passport/config.js', 'passport/google.js', 'passport/passport.js', 'passport/ui.js', 'passport/passport.css', 'passport/theme.json', 'sync.js', 'config.js', 'gsheet.js', 'manifest.json', 'icon-192.png', 'icon-512.png', 'icon-maskable-512.png', 'invite-qr.svg'];
+const FILES = ['./', 'index.html', 'app.css', 'app.js', 'manifest.json', 'passport/theme.json',
+  'store.js', 'vault.js', 'config.js', 'passport-lock.js', 'passport/config.js', 'passport/google.js', 'passport/passport.js',
+  'passport/ui.js', 'passport/passport.css', 'sync.js', 'gsheet.js', 'icon-192.png', 'icon-512.png', 'icon-maskable-512.png', 'invite-qr.svg'];
 
 self.addEventListener('install', e => {
   e.waitUntil((async () => {
@@ -25,13 +27,14 @@ self.addEventListener('activate', e => {
 
 self.addEventListener('fetch', e => {
   const req = e.request, url = new URL(req.url);
-  if (req.method !== 'GET' || url.origin !== self.location.origin) return;   // fonts and the Worker go their own way
-  if (req.mode === 'navigate') {                                             // the page: newest if online, else the kept one
+  if (req.method !== 'GET' || url.origin !== self.location.origin) return;
+  const scope = new URL(self.registration.scope).pathname;
+  if (req.mode === 'navigate' && url.pathname !== scope && url.pathname !== scope + 'index.html') return;
+  if (req.mode === 'navigate') {
     e.respondWith((async () => {
       try {
-        const r = await fetch(req, {cache: 'no-cache'});                    // always check for a newer page
-        const scope = new URL(self.registration.scope).pathname;               // only the app page itself, never /next/ or /demo2/
-        if (r.ok && (url.pathname === scope || url.pathname === scope + 'index.html')) { const c = await caches.open(CACHE); c.put('./', r.clone()); }
+        const r = await fetch(req, {cache: 'no-cache'});
+        if (r.ok) { const c = await caches.open(CACHE); c.put('./', r.clone()); }
         return r;
       } catch (err) {
         return (await caches.match('./', {ignoreSearch: true})) || (await caches.match('index.html', {ignoreSearch: true})) || Response.error();

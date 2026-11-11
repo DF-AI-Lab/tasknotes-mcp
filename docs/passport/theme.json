@@ -3,24 +3,24 @@
   "tagline": "Tasks and notes, on your phone.",
   "button": "Open my notes",
   "drive": "Todo",
-  "font": "Manrope",
-  "fontUrl": "https://fonts.googleapis.com/css2?family=Manrope:wght@400;600;700;800&display=swap",
+  "font": "Geist",
+  "fontUrl": "",
   "align": "center",
   "logo": {
-    "type": "text",
-    "value": "TN"
+    "type": "svg",
+    "value": "<svg viewBox=\"0 0 120 120\" style=\"width:100%;height:100%\"><use href=\"#tn\"/></svg>"
   },
   "colors": {
-    "bg": "#0f1622",
-    "text": "#e8eef6",
-    "muted": "#8d9bb0",
-    "accent": "#6ea0ff",
-    "accentText": "#0f1622",
-    "field": "#18212f",
-    "fieldBorder": "#2a3548",
-    "link": "#8FB5FF",
-    "error": "#FF8A80",
-    "tile": "#6ea0ff",
-    "tileText": "#0f1622"
+    "bg": "#101114",
+    "text": "#f2f3f7",
+    "muted": "#8b8d94",
+    "accent": "#f2f3f7",
+    "accentText": "#0c0d12",
+    "field": "rgba(255,255,255,.06)",
+    "fieldBorder": "rgba(255,255,255,.10)",
+    "link": "#c9cbd3",
+    "error": "#ff8a80",
+    "tile": "#f2f3f7",
+    "tileText": "#0c0d12"
   }
 }
