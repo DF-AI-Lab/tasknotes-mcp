@@ -254,6 +254,17 @@ textarea.field{font:400 15px/1.45 var(--font);min-height:96px}
 .pills3{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
 .pills3 .chip{height:36px;justify-content:center;width:100%;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .sbar{display:flex;gap:10px;align-items:center}
+.files{position:absolute;left:0;right:0;bottom:10px;display:flex;gap:6px;overflow-x:auto;scrollbar-width:none;transition:opacity .2s}
+.files:empty{display:none}
+.sbody.open .files{opacity:0;pointer-events:none}
+.sbody:has(.files:not(:empty)) .nline{padding-bottom:50px}
+.fchip{flex:none;display:flex;align-items:center;gap:6px;height:32px;max-width:200px;padding:0 4px 0 10px;border-radius:9px;background:var(--surface);box-shadow:inset 0 0 0 1px var(--edge);font-size:13px;color:var(--text)}
+.cfiles{display:flex;flex-wrap:wrap;gap:6px;margin-top:10px}
+.cfiles .fchip{padding-right:10px}
+.fchip b{font-weight:500;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.fchip svg{width:15px;height:15px;flex:none;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+.fchip>svg{color:var(--muted)}
+.fchip button{width:24px;height:24px;display:grid;place-items:center;color:var(--muted);border-radius:6px}
 .ib{width:42px;height:36px;flex:none;border-radius:11px;display:grid;place-items:center;color:var(--muted);background:var(--surface);box-shadow:inset 0 0 0 1px var(--edge)}
 .ib svg{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
 .ib.on{color:var(--text);box-shadow:inset 0 0 0 1px rgba(255,255,255,.45)}
@@ -366,7 +377,7 @@ function parseQuick(text,s,t){
 /* ---------- data ---------- */
 function newItem(f){
   return {id:rid('i'),title:String(f.title||'').trim(),details:String(f.details||'').trim(),category:f.category||'',due:f.due||'',time:f.time||'',
-    estimate_mins:Number(f.estimate_mins)||0,needs:!!f.needs,important:f.important||'',done:false,done_at:'',review_later:!!f.review_later,
+    estimate_mins:Number(f.estimate_mins)||0,needs:!!f.needs,important:f.important||'',done:false,done_at:'',review_later:!!f.review_later,files:(f.files||[]).slice(),
     created:nowIso(),updated:nowIso(),deleted_at:'',deleted_by:''};
 }
 function seed(){
@@ -447,7 +458,7 @@ function bigRow(r){
   return '<div class="row big" data-fid="r'+r.id+'"'+(col?' style="--c:'+esc(col)+'"':'')+'><div class="big-in"><div class="big-top">'+
     '<button class="bigtick" data-act="tick" data-id="'+r.id+'" aria-label="Done"><i class="ring"></i>'+ico('tick')+'</button>'+
     '<button class="open" data-act="fold" data-id="'+r.id+'" aria-expanded="true"><h2>'+esc(r.title)+'</h2>'+(meta?'<span class="bmeta">'+meta+'</span>':'')+'</button></div>'+
-    (r.details?'<p>'+esc(r.details)+'</p>':'')+
+    (r.details?'<p>'+esc(r.details)+'</p>':'')+((r.files||[]).length?'<div class="cfiles">'+r.files.map(function(x){return '<span class="fchip">'+ico('file')+'<b>'+esc(x.name)+'</b></span>'}).join('')+'</div>':'')+
     '<div class="big-foot"><button class="laterbtn" data-act="later" data-id="'+r.id+'">'+ico('clock')+'Later</button>'+
     '<span class="acts"><button class="pin'+(pinned(r)?' on':'')+'" data-act="pin" data-id="'+r.id+'" aria-label="'+(pinned(r)?'Unpin':'Pin')+'" aria-pressed="'+pinned(r)+'">'+ico('pin')+'</button>'+
     '<button class="more" data-act="open" data-id="'+r.id+'" aria-label="Edit">'+ico('dots')+'</button></span></div></div></div>';
@@ -470,7 +481,7 @@ function bigNote(r){
   return '<div class="row big bignote" data-fid="r'+r.id+'"'+(col?' style="--c:'+esc(col)+'"':'')+'><div class="big-in"><div class="big-top">'+
     '<span class="bigtick noteglyph" aria-hidden="true">'+ico('note')+'</span>'+
     '<button class="open" data-act="nfold" data-id="'+r.id+'" aria-expanded="true"><h2>'+esc(r.title)+'</h2>'+(r.category?'<span class="bmeta"><i></i>'+esc(r.category)+'</span>':'')+'</button></div>'+
-    (r.details?'<p style="white-space:pre-line">'+esc(r.details)+'</p>':'')+
+    (r.details?'<p style="white-space:pre-line">'+esc(r.details)+'</p>':'')+((r.files||[]).length?'<div class="cfiles">'+r.files.map(function(x){return '<span class="fchip">'+ico('file')+'<b>'+esc(x.name)+'</b></span>'}).join('')+'</div>':'')+
     '<div class="big-foot"><button class="laterbtn'+(r.review_later?' on':'')+'" data-act="rlater" data-id="'+r.id+'" aria-pressed="'+!!r.review_later+'">'+ico('flag')+'Review later</button>'+
     '<span class="acts"><button class="pin'+(pinned(r)?' on':'')+'" data-act="pin" data-id="'+r.id+'" aria-label="'+(pinned(r)?'Unpin':'Pin')+'" aria-pressed="'+pinned(r)+'">'+ico('pin')+'</button>'+
     '<button class="more" data-act="open" data-id="'+r.id+'" aria-label="Edit">'+ico('dots')+'</button></span></div></div></div>';
@@ -716,8 +727,8 @@ function togglePin(id){
 /* ---------- sheet ---------- */
 function openSheet(id){
   var r=id&&findItem(id);
-  sh={id:id||null,open:null,f:r?{title:r.title,details:r.details,category:r.category,due:r.due,time:r.time,estimate_mins:r.estimate_mins,needs:r.needs,important:r.important,review_later:r.review_later}
-    :{title:'',details:'',category:nf.cat&&screen==='notes'?nf.cat:'',due:screen==='day'?picked:'',time:'',estimate_mins:0,needs:false,important:'',review_later:false}};
+  sh={id:id||null,open:null,f:r?{title:r.title,details:r.details,category:r.category,due:r.due,time:r.time,estimate_mins:r.estimate_mins,needs:r.needs,important:r.important,review_later:r.review_later,files:(r.files||[]).slice()}
+    :{title:'',details:'',category:nf.cat&&screen==='notes'?nf.cat:'',due:screen==='day'?picked:'',time:'',estimate_mins:0,needs:false,important:'',review_later:false,files:[]}};
   renderSheet();
   $scrim.classList.add('show');$sheet.classList.add('show');
   if(!r)setTimeout(function(){var t=document.getElementById('f-title');if(t)t.focus()},230);
@@ -743,6 +754,9 @@ function drawerHtml(){
     '<div class="chips" style="margin-top:8px">'+[5,10,15,20,30,45,60,90,120].map(function(m){return c('setmins',m,f.estimate_mins===m,fmtMins(m))}).join('')+c('setmins',0,!f.estimate_mins,'No length')+'</div>';
   return '';
 }
+function fsize(n){return n>1048576?(n/1048576).toFixed(1)+' MB':Math.max(1,Math.round(n/1024))+' KB'}
+function filesHtml(){return (sh.f.files||[]).map(function(x,i){return '<span class="fchip">'+ico('file')+'<b>'+esc(x.name)+'</b><button data-act="unattach" data-v="'+i+'" aria-label="Remove '+esc(x.name)+'">'+ico('x')+'</button></span>'}).join('')}
+function pickFile(cb){var i=document.createElement('input');i.type='file';i.multiple=true;i.onchange=function(){cb(Array.prototype.map.call(i.files,function(f){return {name:f.name,size:f.size}}))};i.click()}
 function headText(){
   var f=sh.f;return (sh.id?'Edit ':'New ')+(isTask(f)?'task':'note');
 }
@@ -753,13 +767,14 @@ function renderSheet(){
     '<input class="tline" id="f-title" data-f="title" placeholder="What is it?" autocomplete="off" maxlength="160" value="'+esc(f.title)+'" aria-label="Title">'+
     '<div class="chips pills3" id="pills">'+pillsHtml()+'</div>'+
     '<div class="sbody'+(sh.open?' open':'')+'" id="sbody"><textarea class="nline" id="f-details" data-f="details" placeholder="Notes" rows="4" aria-label="Notes">'+esc(f.details)+'</textarea>'+
-    '<div class="drawer" id="drawer">'+drawerHtml()+'</div></div>'+
+    '<div class="files" id="files">'+filesHtml()+'</div><div class="drawer" id="drawer">'+drawerHtml()+'</div></div>'+
     '<div class="sbar" id="sbar">'+sbarHtml()+'<button class="btn primary" data-act="save" id="save"'+(f.title.trim()?'':' disabled')+'>Save</button>'+delHtml()+'</div>';
 }
 function sbarHtml(){
   var f=sh.f,ib=function(act,on,icon,label){return '<button class="ib'+(on?' on':'')+'" data-act="'+act+'" aria-label="'+label+'"'+(act==='delete'?'':' aria-pressed="'+on+'"')+'>'+ico(icon)+'</button>'};
   return ib('spin',pinned(f),'pin','Pin to top')+ib('needs',!!f.needs,'circle','Needs doing')+
-    (isTask(f)?'':ib('review',!!f.review_later,'flag','Review later'));
+    (isTask(f)?'':ib('review',!!f.review_later,'flag','Review later'))+
+    '<button class="ib" data-act="attach" aria-label="Add document">'+ico('plus')+'</button>';
 }
 function delHtml(){
   return sh.id?'<button class="ib del" data-act="delete" aria-label="Delete">'+ico('trash')+'</button>':'';
@@ -792,7 +807,7 @@ function saveSheet(){
   if(q.due)f.due=q.due;
   if(q.mins)f.estimate_mins=q.mins;
   if(f.time&&!f.due)f.due=todayStr();
-  var r=sh.id&&findItem(sh.id),keep={title:title,details:f.details.trim(),category:f.category,due:f.due,time:f.time,estimate_mins:Number(f.estimate_mins)||0,needs:!!f.needs,important:f.important,review_later:!!f.review_later};
+  var r=sh.id&&findItem(sh.id),keep={title:title,details:f.details.trim(),category:f.category,due:f.due,time:f.time,estimate_mins:Number(f.estimate_mins)||0,needs:!!f.needs,important:f.important,review_later:!!f.review_later,files:(f.files||[]).slice()};
   if(r){Object.keys(keep).forEach(function(k){r[k]=keep[k]});r.updated=nowIso();if(!isTask(r)){r.done=false;r.done_at=''}}
   else{r=newItem(keep);state.items.push(r)}
   if(screen==='day'&&r.due&&weekDays().some(function(d){return ymd(d)===r.due}))picked=r.due;
@@ -834,7 +849,12 @@ document.addEventListener('click',function(e){
     case 'down':$scroll.scrollBy({top:$scroll.clientHeight*.7,behavior:still()?'auto':'smooth'});break;
     case 'expand':flip(function(){openPick=id;render()});break;
     case 'fold':flip(function(){openPick=null;render()});break;
-    case 'add':openSheet(null);break;
+    case 'add':
+      if(screen==='secrets'&&vf==='docs'){pickFile(function(l){l.forEach(function(x,k){VAULT.docs.unshift({id:'d'+Date.now()+k,title:x.name.replace(/\.[^.]+$/,''),meta:(x.name.split('.').pop()||'File').toUpperCase()+', '+fsize(x.size),cat:'Home'})});render();toast(l.length>1?l.length+' documents added':'Document added')});break}
+      if(screen==='secrets'){toast('Adding secrets comes in the live app');break}
+      openSheet(null);break;
+    case 'attach':pickFile(function(l){sh.f.files=(sh.f.files||[]).concat(l);document.getElementById('files').innerHTML=filesHtml()});break;
+    case 'unattach':sh.f.files.splice(+v,1);document.getElementById('files').innerHTML=filesHtml();break;
     case 'undo':var u=toastUndo;hideToast();if(u)u();break;
     case 'nfreview':nf.review=!nf.review;render();break;
     case 'vtab':vf=v;vaultOpen=null;vShow=false;render();break;
