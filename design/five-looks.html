@@ -1,0 +1,292 @@
+<title>TaskNotes Five Looks</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700&family=Geist+Mono:wght@400;500&display=swap">
+<style>
+/* Layout: a gallery wall. Five phones in a wrapping row, each one the same Day screen in a different look. */
+:root{
+  --bg:#f4f5f8; --fg:#14161c; --mut:#646a78; --line:#dfe2ea; --chip:#ffffff; --accent:#2f5bea;
+  --text:"Geist",system-ui,-apple-system,"Segoe UI",sans-serif;
+  --display:"Bricolage Grotesque","Geist",system-ui,sans-serif;
+  --mono:"Geist Mono",ui-monospace,Menlo,monospace;
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#0d0e12;--fg:#eef0f5;--mut:#9399a8;--line:#262932;--chip:#181a21;--accent:#8fa8ff;color-scheme:dark}}
+:root[data-theme="dark"]{--bg:#0d0e12;--fg:#eef0f5;--mut:#9399a8;--line:#262932;--chip:#181a21;--accent:#8fa8ff;color-scheme:dark}
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--fg);font:16px/1.5 var(--text);padding-block:40px 64px;
+  padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+.wrap{max-width:1680px;margin:0 auto;display:flex;flex-direction:column;gap:36px}
+header{display:flex;flex-direction:column;gap:8px;max-width:640px}
+h1{font:700 clamp(30px,5vw,44px)/1.05 var(--display);margin:0;letter-spacing:-.02em;text-wrap:balance}
+header p{margin:0;color:var(--mut);font-size:17px}
+.wall{display:grid;grid-template-columns:repeat(auto-fit,minmax(290px,1fr));gap:44px 24px;justify-items:center}
+.opt{display:flex;flex-direction:column;gap:16px;width:290px;max-width:100%}
+.cap{display:flex;gap:12px;align-items:baseline}
+.cap .n{font:500 13px var(--mono);color:var(--accent)}
+.cap h2{font:700 21px/1.1 var(--display);margin:0}
+.opt p{margin:0;color:var(--mut);font-size:14.5px;line-height:1.45}
+.note{color:var(--mut);font-size:13px;margin:0}
+
+/* ---------- the phone ---------- */
+.ph{width:290px;max-width:100%;height:600px;border-radius:42px;overflow:hidden;position:relative;display:flex;flex-direction:column;
+  background:var(--b);color:var(--t);font:13px/1.35 var(--text);box-shadow:0 0 0 8px var(--chip),0 0 0 9px var(--line),0 30px 50px -24px rgba(10,14,30,.35)}
+.ph svg{width:20px;height:20px;fill:none;stroke:currentColor;stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round;flex:none}
+.ph .pad{padding:34px 20px 0;flex:1;min-height:0;display:flex;flex-direction:column;gap:14px}
+.ck{width:20px;height:20px;border-radius:50%;border:1.6px solid var(--m);flex:none;display:grid;place-items:center}
+.ck.on{background:var(--ac);border-color:var(--ac);color:var(--b)}
+.ck.on svg{width:12px;height:12px;stroke-width:2.6}
+.dot{width:7px;height:7px;border-radius:50%;display:inline-block;flex:none}
+.home{background:var(--c1)}.lab{background:var(--c2)}.work{background:var(--c3)}.fit{background:var(--c4)}
+.sub{color:var(--m);font-size:11.5px;display:flex;align-items:center;gap:6px}
+.done b{text-decoration:line-through;color:var(--m);font-weight:500}
+
+/* 1 · Quiet */
+.a{--b:#fdfdfe;--t:#101218;--m:#8b90a0;--l:#ecedf2;--ac:#2f5bea;--c1:#e0822f;--c2:#2f5bea;--c3:#8a5cf0;--c4:#18a474}
+.a .big{font:600 30px/1 var(--text);letter-spacing:-.03em}
+.a .lead{color:var(--m);font-size:13px;margin-top:6px}
+.a .list{display:flex;flex-direction:column}
+.a .row{display:flex;gap:12px;align-items:center;padding:13px 0;border-bottom:1px solid var(--l)}
+.a .row b{font-weight:500;font-size:14.5px;display:block}
+.a .row .mins{margin-left:auto;color:var(--m);font:400 11.5px var(--mono)}
+.a .lbl{font-size:11.5px;font-weight:600;color:var(--m);margin-top:6px}
+.a .late{color:#d64545}
+.a .tabs{display:flex;justify-content:space-between;padding:14px 20px 22px;border-top:1px solid var(--l);font-size:11.5px;color:var(--m);font-weight:500}
+.a .tabs .on{color:var(--t);font-weight:700}
+.a .fab{position:absolute;right:18px;bottom:66px;width:48px;height:48px;border-radius:50%;background:var(--t);color:var(--b);display:grid;place-items:center}
+
+/* 2 · Depth */
+.b{--b:#0c0d12;--t:#f2f3f7;--m:#8a8fa0;--l:rgba(255,255,255,.07);--ac:#9db4ff;--c1:#ffb072;--c2:#9db4ff;--c3:#c9a6ff;--c4:#6fe0b5;
+  background:radial-gradient(120% 60% at 20% -10%,#273a78 0%,transparent 60%),radial-gradient(90% 50% at 110% 10%,#3a2260 0%,transparent 60%),#0c0d12}
+.b .hello{font-size:12.5px;color:var(--m)}
+.b .big{font:700 27px/1.05 var(--display);letter-spacing:-.02em}
+.b .meter{height:4px;border-radius:9px;background:var(--l);overflow:hidden}
+.b .meter i{display:block;width:22%;height:100%;border-radius:9px;background:linear-gradient(90deg,#9db4ff,#c9a6ff)}
+.b .list{display:flex;flex-direction:column;gap:8px}
+.b .row{display:flex;gap:12px;align-items:center;padding:12px 14px;border-radius:18px;background:rgba(255,255,255,.06);box-shadow:inset 0 1px 0 rgba(255,255,255,.07)}
+.b .row b{font-weight:600;font-size:14px;display:block}
+.b .row .mins{margin-left:auto;font-size:11.5px;color:var(--m)}
+.b .dock{position:absolute;left:14px;right:14px;bottom:16px;height:56px;border-radius:28px;display:flex;align-items:center;justify-content:space-between;padding:0 8px;
+  background:rgba(40,43,56,.72);backdrop-filter:blur(18px);-webkit-backdrop-filter:blur(18px);box-shadow:inset 0 1px 0 rgba(255,255,255,.1),0 12px 30px rgba(0,0,0,.5);color:var(--m)}
+.b .dock span{width:40px;height:40px;display:grid;place-items:center;border-radius:50%}
+.b .dock .on{background:rgba(255,255,255,.1);color:var(--t)}
+.b .dock .plus{background:var(--ac);color:#0c0d12}
+
+/* 3 · One Thing */
+.c{--b:#eef0f6;--t:#12141b;--m:#757b8c;--l:#dfe2ec;--ac:#12141b;--c1:#e0822f;--c2:#3d63f0;--c3:#8a5cf0;--c4:#18a474}
+.c .steps{display:flex;gap:5px}
+.c .steps i{flex:1;height:4px;border-radius:9px;background:var(--l)}
+.c .steps i.on{background:var(--t)}
+.c .lead{font-size:12.5px;color:var(--m);display:flex;justify-content:space-between}
+.c .now{background:#fff;border-radius:28px;padding:22px 20px 18px;display:flex;flex-direction:column;gap:12px;box-shadow:0 18px 30px -20px rgba(30,40,90,.35)}
+.c .now .tag{font-size:11.5px;font-weight:600;color:var(--m);display:flex;align-items:center;gap:6px}
+.c .now h3{font:700 30px/1.02 var(--display);letter-spacing:-.025em;margin:0}
+.c .now p{margin:0;color:var(--m);font-size:12.5px;line-height:1.45}
+.c .acts{display:flex;gap:8px;margin-top:4px}
+.c .acts span{flex:1;text-align:center;padding:12px;border-radius:99px;font-weight:600;font-size:13.5px;background:var(--b)}
+.c .acts .go{flex:2;background:var(--t);color:#fff}
+.c .lbl{font-size:11.5px;font-weight:600;color:var(--m)}
+.c .next{display:flex;flex-direction:column;gap:11px}
+.c .next div{display:flex;align-items:center;gap:10px;font-weight:500;font-size:13.5px}
+.c .next em{margin-left:auto;font-style:normal;color:var(--m);font-size:11.5px}
+.c .tabs{display:flex;justify-content:space-around;align-items:center;padding:10px 14px 20px;color:var(--m)}
+.c .tabs .on{color:var(--t)}
+.c .tabs .plus{width:42px;height:42px;border-radius:50%;background:#fff;color:var(--t);display:grid;place-items:center;box-shadow:0 6px 14px -6px rgba(30,40,90,.4)}
+
+/* 4 · Timeline */
+.d{--b:#ffffff;--t:#15171d;--m:#8a8f9c;--l:#eceef3;--ac:#e5484d;--c1:#e0822f;--c2:#3d63f0;--c3:#8a5cf0;--c4:#18a474}
+.d .top{display:flex;justify-content:space-between;align-items:baseline}
+.d .big{font:600 22px/1 var(--text);letter-spacing:-.02em}
+.d .free{font:500 11.5px var(--mono);color:var(--m)}
+.d .rail{display:grid;grid-template-columns:38px 1fr;column-gap:10px;row-gap:6px;align-items:start}
+.d .hr{font:400 10.5px var(--mono);color:var(--m);padding-top:8px;text-align:right}
+.d .blk{border-radius:12px;padding:8px 11px;display:flex;flex-direction:column;justify-content:space-between;gap:2px;background:color-mix(in srgb,var(--k) 13%,#fff);box-shadow:inset 3px 0 0 var(--k)}
+.d .blk b{font-weight:600;font-size:13px}
+.d .blk small{font:400 10.5px var(--mono);color:color-mix(in srgb,var(--k) 70%,#15171d)}
+.d .gap{grid-column:2;font-size:11px;color:var(--m);border:1px dashed var(--l);border-radius:12px;padding:7px 11px}
+.d .nowline{grid-column:1/-1;display:flex;align-items:center;gap:6px;font:500 10.5px var(--mono);color:var(--ac)}
+.d .nowline::after{content:"";flex:1;height:1.5px;background:var(--ac)}
+.d .tabs{display:flex;justify-content:space-around;padding:10px 10px 18px;border-top:1px solid var(--l);color:var(--m);font-size:10px;font-weight:500}
+.d .tabs span{display:flex;flex-direction:column;align-items:center;gap:3px}
+.d .tabs .on{color:var(--t)}
+
+/* 5 · Rings */
+.e{--b:#111216;--t:#f4f4f6;--m:#8d909c;--l:#23252d;--ac:#f4f4f6;--c1:#ff9d5c;--c2:#7c9cff;--c3:#c08bff;--c4:#4fd6a4}
+.e .hero{display:flex;align-items:center;gap:16px}
+.e .ring{width:118px;height:118px;flex:none;position:relative;display:grid;place-items:center}
+.e .ring svg{position:absolute;inset:0;width:100%;height:100%;stroke-width:9;stroke-linecap:butt;transform:rotate(-90deg)}
+.e .ring strong{font:700 24px/1 var(--display);display:block;text-align:center}
+.e .ring small{font-size:10.5px;color:var(--m);display:block;text-align:center;margin-top:3px}
+.e .key{display:flex;flex-direction:column;gap:7px;font-size:12px;min-width:0}
+.e .key div{display:flex;align-items:center;gap:7px}
+.e .key em{font-style:normal;color:var(--m);font-size:11px;margin-left:auto;padding-left:10px}
+.e .day{font-size:12.5px;color:var(--m)}
+.e .list{display:flex;flex-direction:column;border-radius:20px;background:#191b21;padding:2px 14px}
+.e .row{display:flex;gap:11px;align-items:center;padding:12px 0;border-bottom:1px solid var(--l)}
+.e .row:last-child{border-bottom:0}
+.e .row b{font-weight:500;font-size:13.5px}
+.e .row .mins{margin-left:auto;font-size:11.5px;color:var(--m)}
+.e .ck{border-color:var(--k)}
+.e .ck.on{background:var(--k);border-color:var(--k)}
+.e .tabs{display:flex;justify-content:space-around;align-items:center;padding:10px 14px 20px;color:var(--m)}
+.e .tabs .on{color:var(--t)}
+.e .tabs .plus{width:40px;height:40px;border-radius:14px;background:var(--t);color:var(--b);display:grid;place-items:center}
+</style>
+
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <symbol id="i-sun" viewBox="0 0 24 24"><circle cx="12" cy="12" r="4"/><path d="M12 3v2M12 19v2M3 12h2M19 12h2M5.6 5.6l1.4 1.4M17 17l1.4 1.4M5.6 18.4 7 17M17 7l1.4-1.4"/></symbol>
+  <symbol id="i-note" viewBox="0 0 24 24"><path d="M6 4h9l4 4v12H6z"/><path d="M9 11h7M9 15h5"/></symbol>
+  <symbol id="i-mark" viewBox="0 0 24 24"><path d="M7 4h10v16l-5-4-5 4z"/></symbol>
+  <symbol id="i-done" viewBox="0 0 24 24"><circle cx="12" cy="12" r="8.5"/><path d="m8.5 12.2 2.4 2.4 4.6-5"/></symbol>
+  <symbol id="i-lock" viewBox="0 0 24 24"><rect x="5.5" y="10.5" width="13" height="9.5" rx="2.5"/><path d="M8.5 10.5V8a3.5 3.5 0 0 1 7 0v2.5"/></symbol>
+  <symbol id="i-plus" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></symbol>
+  <symbol id="i-tick" viewBox="0 0 24 24"><path d="m5 12.5 4.5 4.5L19 7.5"/></symbol>
+</svg>
+
+<div class="wrap">
+<header>
+  <h1>Five looks for TaskNotes</h1>
+  <p>Same Day screen, five ways. Pick a number, or mix two.</p>
+</header>
+
+<div class="wall">
+
+<!-- 1 -->
+<section class="opt">
+  <div class="ph a">
+    <div class="pad">
+      <div><div class="big">Wednesday</div><div class="lead">4 to do · 2h 15m</div></div>
+      <div class="list">
+        <div class="row"><span class="ck"></span><div><b>Book MOT</b><span class="sub"><i class="dot home"></i>Home</span></div><span class="mins">15m</span></div>
+        <div class="row"><span class="ck"></span><div><b>Set up Cloudflare Worker</b><span class="sub"><i class="dot lab"></i>AI Lab</span></div><span class="mins">1h</span></div>
+        <div class="row"><span class="ck"></span><div><b>Reply to Sam's email</b><span class="sub"><i class="dot work"></i>Work</span></div><span class="mins">10m</span></div>
+        <div class="row"><span class="ck"></span><div><b>Gym: legs</b><span class="sub"><i class="dot fit"></i>Health</span></div><span class="mins">50m</span></div>
+        <div class="row done"><span class="ck on"><svg><use href="#i-tick"/></svg></span><div><b>Order bin bags</b></div><span class="mins">5m</span></div>
+      </div>
+      <div class="lbl late">Late</div>
+      <div class="list" style="margin-top:-12px"><div class="row" style="border:0"><span class="ck"></span><div><b>Pay window cleaner</b><span class="sub"><i class="dot home"></i>Home · yesterday</span></div><span class="mins">5m</span></div></div>
+    </div>
+    <span class="fab"><svg><use href="#i-plus"/></svg></span>
+    <div class="tabs"><span class="on">Day</span><span>Notes</span><span>Review</span><span>Done</span><span>Secrets</span></div>
+  </div>
+  <div class="cap"><span class="n">1</span><h2>Quiet</h2></div>
+  <p>White space and one font. No boxes, no emoji. Colour is only a tiny dot.</p>
+</section>
+
+<!-- 2 -->
+<section class="opt">
+  <div class="ph b">
+    <div class="pad">
+      <div><div class="hello">Wed 11 Nov</div><div class="big">Morning, Darren</div></div>
+      <div class="meter"><i></i></div>
+      <div class="list">
+        <div class="row"><span class="ck"></span><div><b>Book MOT</b><span class="sub"><i class="dot home"></i>Home</span></div><span class="mins">15m</span></div>
+        <div class="row"><span class="ck"></span><div><b>Set up Cloudflare Worker</b><span class="sub"><i class="dot lab"></i>AI Lab</span></div><span class="mins">1h</span></div>
+        <div class="row"><span class="ck"></span><div><b>Reply to Sam's email</b><span class="sub"><i class="dot work"></i>Work</span></div><span class="mins">10m</span></div>
+        <div class="row"><span class="ck"></span><div><b>Gym: legs</b><span class="sub"><i class="dot fit"></i>Health</span></div><span class="mins">50m</span></div>
+        <div class="row done"><span class="ck on"><svg><use href="#i-tick"/></svg></span><div><b>Order bin bags</b></div><span class="mins">5m</span></div>
+      </div>
+    </div>
+    <div class="dock">
+      <span class="on"><svg><use href="#i-sun"/></svg></span><span><svg><use href="#i-note"/></svg></span>
+      <span class="plus"><svg><use href="#i-plus"/></svg></span>
+      <span><svg><use href="#i-mark"/></svg></span><span><svg><use href="#i-done"/></svg></span><span><svg><use href="#i-lock"/></svg></span>
+    </div>
+  </div>
+  <div class="cap"><span class="n">2</span><h2>Depth</h2></div>
+  <p>Dark, soft glow, floating glass dock. Rows lift off the page instead of sitting in outlines.</p>
+</section>
+
+<!-- 3 -->
+<section class="opt">
+  <div class="ph c">
+    <div class="pad">
+      <div class="steps"><i class="on"></i><i></i><i></i><i></i><i></i></div>
+      <div class="lead"><span>Wed 11 Nov</span><span>1 of 5 done</span></div>
+      <div class="now">
+        <div class="tag"><i class="dot home"></i>Home · 15 min</div>
+        <h3>Book MOT</h3>
+        <p>Garage on Main St. Ring before 10am, ask for the Saturday slot.</p>
+        <div class="acts"><span>Later</span><span class="go">Done</span></div>
+      </div>
+      <div class="lbl">Up next</div>
+      <div class="next">
+        <div><i class="dot lab"></i>Set up Cloudflare Worker<em>1h</em></div>
+        <div><i class="dot work"></i>Reply to Sam's email<em>10m</em></div>
+        <div><i class="dot fit"></i>Gym: legs<em>50m</em></div>
+      </div>
+    </div>
+    <div class="tabs">
+      <span class="on"><svg><use href="#i-sun"/></svg></span><span><svg><use href="#i-note"/></svg></span>
+      <span class="plus"><svg><use href="#i-plus"/></svg></span>
+      <span><svg><use href="#i-mark"/></svg></span><span><svg><use href="#i-lock"/></svg></span>
+    </div>
+  </div>
+  <div class="cap"><span class="n">3</span><h2>One Thing</h2></div>
+  <p>Shows one task, big. Done or Later, then the next one slides in. Built for focus.</p>
+</section>
+
+<!-- 4 -->
+<section class="opt">
+  <div class="ph d">
+    <div class="pad">
+      <div class="top"><span class="big">Wed 11 Nov</span><span class="free">2h 15m planned</span></div>
+      <div class="rail">
+        <span class="hr">09:00</span><div class="blk" style="--k:var(--c1);min-height:40px"><b>Book MOT</b><small>15m · Home</small></div>
+        <span class="hr">09:30</span><div class="blk" style="--k:var(--c3);min-height:40px"><b>Reply to Sam's email</b><small>10m · Work</small></div>
+        <div class="nowline">10:12</div>
+        <span class="hr">10:30</span><div class="blk" style="--k:var(--c2);min-height:104px"><b>Set up Cloudflare Worker</b><small>1h · AI Lab</small></div>
+        <span class="hr">11:30</span><div class="gap">Free until 17:30</div>
+        <span class="hr">17:30</span><div class="blk" style="--k:var(--c4);min-height:88px"><b>Gym: legs</b><small>50m · Health</small></div>
+      </div>
+    </div>
+    <div class="tabs">
+      <span class="on"><svg><use href="#i-sun"/></svg>Day</span><span><svg><use href="#i-note"/></svg>Notes</span><span><svg><use href="#i-mark"/></svg>Review</span><span><svg><use href="#i-done"/></svg>Done</span><span><svg><use href="#i-lock"/></svg>Secrets</span>
+    </div>
+  </div>
+  <div class="cap"><span class="n">4</span><h2>Timeline</h2></div>
+  <p>Your day as blocks. A longer task is a taller block, so you see if the day fits.</p>
+</section>
+
+<!-- 5 -->
+<section class="opt">
+  <div class="ph e">
+    <div class="pad">
+      <div class="day">Wed 11 Nov</div>
+      <div class="hero">
+        <div class="ring">
+          <svg viewBox="0 0 120 120" fill="none">
+            <circle cx="60" cy="60" r="52" stroke="#23252d"/>
+            <circle cx="60" cy="60" r="52" stroke="#ff9d5c" stroke-dasharray="41.7 326.7"/>
+            <circle cx="60" cy="60" r="52" stroke="#7c9cff" stroke-dasharray="135 326.7" stroke-dashoffset="-46.7"/>
+            <circle cx="60" cy="60" r="52" stroke="#c08bff" stroke-dasharray="18.3 326.7" stroke-dashoffset="-186.7"/>
+            <circle cx="60" cy="60" r="52" stroke="#4fd6a4" stroke-dasharray="111.7 326.7" stroke-dashoffset="-210"/>
+          </svg>
+          <div><strong>2h 15</strong><small>left today</small></div>
+        </div>
+        <div class="key">
+          <div><i class="dot home"></i>Home<em>20m</em></div>
+          <div><i class="dot lab"></i>AI Lab<em>1h</em></div>
+          <div><i class="dot work"></i>Work<em>10m</em></div>
+          <div><i class="dot fit"></i>Health<em>50m</em></div>
+        </div>
+      </div>
+      <div class="list">
+        <div class="row"><span class="ck" style="--k:var(--c1)"></span><b>Book MOT</b><span class="mins">15m</span></div>
+        <div class="row"><span class="ck" style="--k:var(--c2)"></span><b>Set up Cloudflare Worker</b><span class="mins">1h</span></div>
+        <div class="row"><span class="ck" style="--k:var(--c3)"></span><b>Reply to Sam's email</b><span class="mins">10m</span></div>
+        <div class="row"><span class="ck" style="--k:var(--c4)"></span><b>Gym: legs</b><span class="mins">50m</span></div>
+        <div class="row done"><span class="ck on" style="--k:var(--c1)"><svg><use href="#i-tick"/></svg></span><b>Order bin bags</b><span class="mins">5m</span></div>
+      </div>
+    </div>
+    <div class="tabs">
+      <span class="on"><svg><use href="#i-sun"/></svg></span><span><svg><use href="#i-note"/></svg></span>
+      <span class="plus"><svg><use href="#i-plus"/></svg></span>
+      <span><svg><use href="#i-mark"/></svg></span><span><svg><use href="#i-lock"/></svg></span>
+    </div>
+  </div>
+  <div class="cap"><span class="n">5</span><h2>Rings</h2></div>
+  <p>One ring shows the whole day, split by category. It closes as you tick things off.</p>
+</section>
+
+</div>
+<p class="note">Sample tasks from the app's demo mode. Times in Timeline are made up for the picture.</p>
+</div>
