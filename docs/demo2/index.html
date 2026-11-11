@@ -15,7 +15,7 @@
   --glow:#3a3b41;
   --surface:rgba(255,255,255,.06);
   --surface-2:rgba(255,255,255,.10);
-  --hero:linear-gradient(160deg,rgba(255,255,255,.15),rgba(255,255,255,.05));
+  --hero:linear-gradient(160deg,rgba(255,255,255,.11),rgba(255,255,255,.05));
   --edge:rgba(255,255,255,.08);
   --line:rgba(255,255,255,.08);
   --text:#f2f3f7;
@@ -94,7 +94,7 @@ svg{width:20px;height:20px;fill:none;stroke:currentColor;stroke-width:1.7;stroke
 
 /* ===== NOW CARD ===== */
 .now{border-radius:var(--r-hero);padding:20px 20px 18px;display:flex;flex-direction:column;gap:10px;background:var(--hero);
-  box-shadow:inset 0 1px 0 rgba(255,255,255,.18),0 18px 30px -18px rgba(0,0,0,.7)}
+  box-shadow:inset 0 1px 0 var(--edge),0 18px 30px -18px rgba(0,0,0,.7)}
 .now-top{display:flex;justify-content:space-between;align-items:center}
 .now h2{font:700 31px/1.05 var(--display);letter-spacing:-.02em;margin:0;overflow-wrap:anywhere}
 .now p{margin:0;color:var(--muted);font-size:14px;line-height:1.45}
@@ -147,7 +147,7 @@ svg{width:20px;height:20px;fill:none;stroke:currentColor;stroke-width:1.7;stroke
 .scrim.show{opacity:1;pointer-events:auto}
 .sheet{position:fixed;left:50%;bottom:0;width:100%;max-width:430px;max-height:92%;overflow-y:auto;z-index:11;
   transform:translate(-50%,100%);visibility:hidden;transition:transform .22s ease,visibility 0s .22s;
-  border-radius:var(--r-hero) var(--r-hero) 0 0;background:var(--hero),var(--bg);box-shadow:inset 0 1px 0 rgba(255,255,255,.18);
+  border-radius:var(--r-hero) var(--r-hero) 0 0;background:var(--hero),var(--bg);box-shadow:inset 0 1px 0 var(--edge);
   padding:14px var(--gutter) calc(20px + env(safe-area-inset-bottom));display:flex;flex-direction:column;gap:12px}
 .sheet.show{transform:translate(-50%,0);visibility:visible;transition-delay:0s}
 .sh-head{display:flex;justify-content:space-between;align-items:center;min-height:32px}
