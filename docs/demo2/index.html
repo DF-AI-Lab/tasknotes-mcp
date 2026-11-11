@@ -174,7 +174,8 @@ svg{width:20px;height:20px;fill:none;stroke:currentColor;stroke-width:1.7;stroke
 .filterbar{flex:none;display:flex;align-items:center;gap:6px;margin-right:calc(-1 * var(--gutter))}
 .filterbar .allchip{height:32px;padding:0 12px;font-size:13px;flex:none}
 .filters{flex:1;min-width:0;flex-wrap:nowrap;gap:6px;overflow-x:auto;scrollbar-width:none;padding-right:var(--gutter);
-  -webkit-mask-image:linear-gradient(90deg,transparent,#000 12px,#000 calc(100% - 28px),transparent);mask-image:linear-gradient(90deg,transparent,#000 12px,#000 calc(100% - 28px),transparent)}
+  -webkit-mask-image:linear-gradient(90deg,#000,#000 calc(100% - 28px),transparent);mask-image:linear-gradient(90deg,#000,#000 calc(100% - 28px),transparent)}
+.filters.scrolled{-webkit-mask-image:linear-gradient(90deg,transparent,#000 8px,#000 calc(100% - 28px),transparent);mask-image:linear-gradient(90deg,transparent,#000 8px,#000 calc(100% - 28px),transparent)}
 .filters::-webkit-scrollbar{display:none}
 .filters .chip{height:32px;padding:0 12px;font-size:13px;gap:6px;flex:none}
 .filters .chip[data-act="nfreview"]{width:38px;padding:0;justify-content:center}
@@ -833,6 +834,7 @@ document.addEventListener('keydown',function(e){
 });
 
 $scroll.addEventListener('scroll',checkDown,{passive:true});
+document.addEventListener('scroll',function(e){var f=e.target;if(f.classList&&f.classList.contains('filters'))f.classList.toggle('scrolled',f.scrollLeft>2)},true);
 /* filter row: mouse wheel + drag scroll sideways (touch already swipes) */
 $scroll.addEventListener('wheel',function(e){
   var f=e.target.closest&&e.target.closest('.filters');if(!f||Math.abs(e.deltaX)>Math.abs(e.deltaY))return;
