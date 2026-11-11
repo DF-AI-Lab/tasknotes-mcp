@@ -2,6 +2,8 @@
 
 Only while Darren has Fable. Delete this file when it ends.
 
+**Main goal: keep tokens down while using Fable.**
+
 ## Roles
 - **Main chat** runs everything and does all the building.
 - **Fable sub agent**: only two jobs.
