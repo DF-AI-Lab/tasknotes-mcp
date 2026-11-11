@@ -1,0 +1,112 @@
+<title>TaskNotes Depth Five Ways</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700&family=Geist+Mono:wght@400;500&display=swap">
+<style>
+/* Layout: a gallery wall. Five phones in a wrapping row, each one the Depth look pushed a different way. */
+:root{
+  --bg:#f4f5f8; --fg:#14161c; --mut:#646a78; --line:#dfe2ea; --chip:#ffffff; --accent:#2f5bea;
+  --text:"Geist",system-ui,-apple-system,"Segoe UI",sans-serif;
+  --display:"Bricolage Grotesque","Geist",system-ui,sans-serif;
+  --mono:"Geist Mono",ui-monospace,Menlo,monospace;
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#0d0e12;--fg:#eef0f5;--mut:#9399a8;--line:#262932;--chip:#181a21;--accent:#8fa8ff;color-scheme:dark}}
+:root[data-theme="dark"]{--bg:#0d0e12;--fg:#eef0f5;--mut:#9399a8;--line:#262932;--chip:#181a21;--accent:#8fa8ff;color-scheme:dark}
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--fg);font:16px/1.5 var(--text);padding-block:40px 64px;
+  padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+.wrap{max-width:1680px;margin:0 auto;display:flex;flex-direction:column;gap:36px}
+header{display:flex;flex-direction:column;gap:8px;max-width:640px}
+h1{font:700 clamp(30px,5vw,44px)/1.05 var(--display);margin:0;letter-spacing:-.02em;text-wrap:balance}
+header p{margin:0;color:var(--mut);font-size:17px}
+.wall{display:grid;grid-template-columns:repeat(auto-fit,minmax(290px,1fr));gap:44px 24px;justify-items:center}
+.opt{display:flex;flex-direction:column;gap:16px;width:290px;max-width:100%}
+.cap{display:flex;gap:12px;align-items:baseline}
+.cap .n{font:500 13px var(--mono);color:var(--accent)}
+.cap h2{font:700 21px/1.1 var(--display);margin:0}
+.opt p{margin:0;color:var(--mut);font-size:14.5px;line-height:1.45}
+.note{color:var(--mut);font-size:13px;margin:0}
+
+/* ---------- shared phone + Depth parts ---------- */
+.ph{--c1:#ffb072;--c2:#9db4ff;--c3:#c9a6ff;--c4:#6fe0b5;--t:#f2f3f7;--m:#8a8fa0;--l:rgba(255,255,255,.08);--row:rgba(255,255,255,.06);--hi:rgba(255,255,255,.08);
+  --dock:rgba(40,43,56,.72);--dsh:0 12px 30px rgba(0,0,0,.5);--on:#0c0d12;
+  width:290px;max-width:100%;height:600px;border-radius:42px;overflow:hidden;position:relative;display:flex;flex-direction:column;
+  color:var(--t);font:13px/1.35 var(--text);box-shadow:0 0 0 8px var(--chip),0 0 0 9px var(--line),0 30px 50px -24px rgba(10,14,30,.35)}
+.ph svg{width:20px;height:20px;fill:none;stroke:currentColor;stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round;flex:none}
+.pad{padding:34px 20px 0;flex:1;min-height:0;display:flex;flex-direction:column;gap:14px}
+.ck{width:20px;height:20px;border-radius:50%;border:1.6px solid var(--m);flex:none;display:grid;place-items:center}
+.ck.on{background:var(--ac);border-color:var(--ac);color:var(--on)}
+.ck.on svg{width:12px;height:12px;stroke-width:2.6}
+.dot{width:7px;height:7px;border-radius:50%;display:inline-block;flex:none}
+.home{background:var(--c1)}.lab{background:var(--c2)}.work{background:var(--c3)}.fit{background:var(--c4)}
+.sub{color:var(--m);font-size:11.5px;display:flex;align-items:center;gap:6px}
+.done b{text-decoration:line-through;color:var(--m)}
+.hello{font-size:12.5px;color:var(--m)}
+.big{font:700 27px/1.05 var(--display);letter-spacing:-.02em}
+.meter{height:4px;border-radius:9px;background:var(--l);overflow:hidden}
+.meter i{display:block;width:22%;height:100%;border-radius:9px;background:var(--bar)}
+.list{display:flex;flex-direction:column;gap:8px}
+.row{display:flex;gap:12px;align-items:center;padding:12px 14px;border-radius:18px;background:var(--row);box-shadow:inset 0 1px 0 var(--hi)}
+.row b{font-weight:600;font-size:14px;display:block}
+.row .mins{margin-left:auto;font-size:11.5px;color:var(--m)}
+.panel{gap:0;border-radius:22px;background:var(--row);box-shadow:inset 0 1px 0 var(--hi);padding:2px 14px}
+.panel .row{background:none;box-shadow:none;border-radius:0;padding:12px 0;border-bottom:1px solid var(--l)}
+.panel .row:last-child{border-bottom:0}
+.dock{position:absolute;left:14px;right:14px;bottom:16px;height:56px;border-radius:28px;display:flex;align-items:center;justify-content:space-between;padding:0 8px;
+  background:var(--dock);backdrop-filter:blur(18px);-webkit-backdrop-filter:blur(18px);box-shadow:inset 0 1px 0 var(--hi),var(--dsh);color:var(--m)}
+.dock span{min-width:40px;height:40px;display:flex;align-items:center;justify-content:center;gap:6px;border-radius:99px;font-weight:600;font-size:12.5px}
+.dock .on{background:var(--l);color:var(--t)}
+.dock .lbl{padding:0 14px 0 12px}
+.dock .plus{background:var(--ac);color:var(--on)}
+
+/* 1 Midnight */
+.a{--ac:#9db4ff;--bar:linear-gradient(90deg,#9db4ff,#c9a6ff);
+  background:radial-gradient(120% 60% at 20% -10%,#273a78 0%,transparent 60%),radial-gradient(90% 50% at 110% 10%,#3a2260 0%,transparent 60%),#0c0d12}
+/* 2 Graphite */
+.b{--ac:#f2f3f7;--m:#8b8d94;--bar:#f2f3f7;--dock:rgba(52,53,58,.75);
+  background:radial-gradient(130% 55% at 50% -15%,#3a3b41 0%,transparent 65%),#101114}
+.b .top{display:flex;justify-content:space-between;align-items:center}
+.b .ring{width:46px;height:46px;position:relative;display:grid;place-items:center;font:500 11px var(--mono)}
+.b .ring svg{position:absolute;inset:0;width:100%;height:100%;stroke-width:3;transform:rotate(-90deg)}
+/* 3 Aurora */
+.c{--ac:#7ff0cf;--c2:#7fd4ff;--bar:linear-gradient(90deg,#7ff0cf,#7fd4ff);--dock:rgba(22,48,52,.7);
+  background:radial-gradient(110% 55% at 0% -10%,#0f6a63 0%,transparent 60%),radial-gradient(90% 50% at 115% 5%,#1b4a8a 0%,transparent 60%),#081114}
+.c .chips{display:flex;gap:6px;flex-wrap:wrap}
+.c .chips span{padding:6px 11px;border-radius:99px;background:var(--row);box-shadow:inset 0 1px 0 var(--hi);font-size:11.5px;font-weight:600;color:var(--m);display:flex;align-items:center;gap:6px}
+.c .chips .on{background:var(--t);color:#081114}
+.c .ck{border-color:var(--k)}
+/* 4 Dusk */
+.d{--ac:#ffb38a;--bar:linear-gradient(90deg,#ffb38a,#ff8fb0);--dock:rgba(58,40,48,.72);
+  background:radial-gradient(120% 60% at 15% -10%,#8a3b2f 0%,transparent 60%),radial-gradient(90% 55% at 115% 10%,#5e2456 0%,transparent 60%),#120d10}
+.d .next{border-radius:26px;padding:18px 18px 16px;display:flex;flex-direction:column;gap:9px;background:linear-gradient(160deg,rgba(255,255,255,.16),rgba(255,255,255,.05));box-shadow:inset 0 1px 0 rgba(255,255,255,.18),0 18px 30px -18px rgba(0,0,0,.7)}
+.d .next h3{font:700 25px/1.05 var(--display);letter-spacing:-.02em;margin:0}
+.d .next p{margin:0;color:var(--m);font-size:12px}
+.d .acts{display:flex;gap:8px;margin-top:4px}
+.d .acts span{flex:1;text-align:center;padding:10px;border-radius:99px;font-weight:600;font-size:13px;background:var(--l)}
+.d .acts .go{flex:2;background:var(--ac);color:var(--on)}
+.d .lbl{font-size:11.5px;font-weight:600;color:var(--m)}
+/* 5 Daylight */
+.e{--t:#12141b;--m:#6f7586;--l:rgba(20,30,70,.08);--row:rgba(255,255,255,.72);--hi:rgba(255,255,255,.9);--ac:#3d63f0;--on:#fff;--bar:linear-gradient(90deg,#3d63f0,#8a5cf0);
+  --c1:#e0822f;--c2:#3d63f0;--c3:#8a5cf0;--c4:#18a474;--dock:rgba(255,255,255,.7);--dsh:0 14px 28px -10px rgba(40,60,140,.35);
+  background:radial-gradient(120% 55% at 15% -10%,#c9d6ff 0%,transparent 60%),radial-gradient(90% 50% at 115% 5%,#e6d2ff 0%,transparent 60%),#eef0f6}
+.e .row{box-shadow:inset 0 1px 0 var(--hi),0 8px 16px -12px rgba(40,60,140,.35)}
+</style>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <symbol id="i-sun" viewBox="0 0 24 24"><circle cx="12" cy="12" r="4"/><path d="M12 3v2M12 19v2M3 12h2M19 12h2M5.6 5.6l1.4 1.4M17 17l1.4 1.4M5.6 18.4 7 17M17 7l1.4-1.4"/></symbol>
+  <symbol id="i-note" viewBox="0 0 24 24"><path d="M6 4h9l4 4v12H6z"/><path d="M9 11h7M9 15h5"/></symbol>
+  <symbol id="i-mark" viewBox="0 0 24 24"><path d="M7 4h10v16l-5-4-5 4z"/></symbol>
+  <symbol id="i-done" viewBox="0 0 24 24"><circle cx="12" cy="12" r="8.5"/><path d="m8.5 12.2 2.4 2.4 4.6-5"/></symbol>
+  <symbol id="i-lock" viewBox="0 0 24 24"><rect x="5.5" y="10.5" width="13" height="9.5" rx="2.5"/><path d="M8.5 10.5V8a3.5 3.5 0 0 1 7 0v2.5"/></symbol>
+  <symbol id="i-plus" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></symbol>
+  <symbol id="i-tick" viewBox="0 0 24 24"><path d="m5 12.5 4.5 4.5L19 7.5"/></symbol>
+</svg>
+<div class="wrap">
+<header><h1>Depth, five ways</h1><p>Same idea, five moods. Pick a number, or mix parts.</p></header>
+<div class="wall">
+<section class="opt"><div class="ph a"><div class="pad"><div><div class="hello">Wed 11 Nov</div><div class="big">Morning, Darren</div></div><div class="meter"><i></i></div><div class="list"><div class="row"><span class="ck"></span><div><b>Book MOT</b><span class="sub"><i class="dot home"></i>Home</span></div><span class="mins">15m</span></div><div class="row"><span class="ck"></span><div><b>Set up Cloudflare Worker</b><span class="sub"><i class="dot lab"></i>AI Lab</span></div><span class="mins">1h</span></div><div class="row"><span class="ck"></span><div><b>Reply to Sam's email</b><span class="sub"><i class="dot work"></i>Work</span></div><span class="mins">10m</span></div><div class="row"><span class="ck"></span><div><b>Gym: legs</b><span class="sub"><i class="dot fit"></i>Health</span></div><span class="mins">50m</span></div><div class="row done"><span class="ck on"><svg><use href="#i-tick"/></svg></span><div><b>Order bin bags</b></div><span class="mins">5m</span></div></div></div><div class="dock"><span class="on"><svg><use href="#i-sun"/></svg></span><span class=""><svg><use href="#i-note"/></svg></span><span class="plus"><svg><use href="#i-plus"/></svg></span><span class=""><svg><use href="#i-mark"/></svg></span><span class=""><svg><use href="#i-done"/></svg></span><span class=""><svg><use href="#i-lock"/></svg></span></div></div><div class="cap"><span class="n">1</span><h2>Midnight</h2></div><p>The one you liked, as it was. Blue and violet glow.</p></section>
+<section class="opt"><div class="ph b"><div class="pad"><div class="top"><div><div class="hello">Wed 11 Nov</div><div class="big">Today</div></div><div class="ring"><svg viewBox="0 0 46 46" fill="none"><circle cx="23" cy="23" r="20" stroke="rgba(255,255,255,.12)"/><circle cx="23" cy="23" r="20" stroke="#f2f3f7" stroke-dasharray="25 126" stroke-linecap="round"/></svg>1/5</div></div><div class="list panel"><div class="row"><span class="ck"></span><div><b>Book MOT</b><span class="sub"><i class="dot home"></i>Home</span></div><span class="mins">15m</span></div><div class="row"><span class="ck"></span><div><b>Set up Cloudflare Worker</b><span class="sub"><i class="dot lab"></i>AI Lab</span></div><span class="mins">1h</span></div><div class="row"><span class="ck"></span><div><b>Reply to Sam's email</b><span class="sub"><i class="dot work"></i>Work</span></div><span class="mins">10m</span></div><div class="row"><span class="ck"></span><div><b>Gym: legs</b><span class="sub"><i class="dot fit"></i>Health</span></div><span class="mins">50m</span></div><div class="row done"><span class="ck on"><svg><use href="#i-tick"/></svg></span><div><b>Order bin bags</b></div><span class="mins">5m</span></div></div></div><div class="dock"><span class="on lbl"><svg><use href="#i-sun"/></svg>Day</span><span class=""><svg><use href="#i-note"/></svg></span><span class=""><svg><use href="#i-mark"/></svg></span><span class=""><svg><use href="#i-done"/></svg></span><span class=""><svg><use href="#i-lock"/></svg></span><span class="plus"><svg><use href="#i-plus"/></svg></span></div></div><div class="cap"><span class="n">2</span><h2>Graphite</h2></div><p>No colour glow. Grey, white, and one grouped panel. The dock names the tab you are on.</p></section>
+<section class="opt"><div class="ph c"><div class="pad"><div><div class="hello">Wed 11 Nov</div><div class="big">Morning, Darren</div></div><div class="chips"><span class="on">All 5</span><span><i class="dot home"></i>Home</span><span><i class="dot lab"></i>AI Lab</span><span><i class="dot work"></i>Work</span></div><div class="list"><div class="row"><span class="ck" style="--k:var(--c1)"></span><div><b>Book MOT</b><span class="sub"><i class="dot home"></i>Home</span></div><span class="mins">15m</span></div><div class="row"><span class="ck" style="--k:var(--c2)"></span><div><b>Set up Cloudflare Worker</b><span class="sub"><i class="dot lab"></i>AI Lab</span></div><span class="mins">1h</span></div><div class="row"><span class="ck" style="--k:var(--c3)"></span><div><b>Reply to Sam's email</b><span class="sub"><i class="dot work"></i>Work</span></div><span class="mins">10m</span></div><div class="row"><span class="ck" style="--k:var(--c4)"></span><div><b>Gym: legs</b><span class="sub"><i class="dot fit"></i>Health</span></div><span class="mins">50m</span></div></div></div><div class="dock"><span class="on"><svg><use href="#i-sun"/></svg></span><span class=""><svg><use href="#i-note"/></svg></span><span class="plus"><svg><use href="#i-plus"/></svg></span><span class=""><svg><use href="#i-mark"/></svg></span><span class=""><svg><use href="#i-done"/></svg></span><span class=""><svg><use href="#i-lock"/></svg></span></div></div><div class="cap"><span class="n">3</span><h2>Aurora</h2></div><p>Teal glow. Category chips at the top to filter, and each tick ring takes the category colour.</p></section>
+<section class="opt"><div class="ph d"><div class="pad"><div><div class="hello">Wed 11 Nov</div><div class="big">Morning, Darren</div></div><div class="next"><span class="sub"><i class="dot home"></i>Next up · Home · 15 min</span><h3>Book MOT</h3><p>Garage on Main St. Ring before 10am.</p><div class="acts"><span>Later</span><span class="go">Done</span></div></div><div class="lbl">Then</div><div class="list panel"><div class="row"><span class="ck"></span><div><b>Set up Cloudflare Worker</b><span class="sub"><i class="dot lab"></i>AI Lab</span></div><span class="mins">1h</span></div><div class="row"><span class="ck"></span><div><b>Reply to Sam's email</b><span class="sub"><i class="dot work"></i>Work</span></div><span class="mins">10m</span></div><div class="row"><span class="ck"></span><div><b>Gym: legs</b><span class="sub"><i class="dot fit"></i>Health</span></div><span class="mins">50m</span></div></div></div><div class="dock"><span class="on"><svg><use href="#i-sun"/></svg></span><span class=""><svg><use href="#i-note"/></svg></span><span class="plus"><svg><use href="#i-plus"/></svg></span><span class=""><svg><use href="#i-mark"/></svg></span><span class=""><svg><use href="#i-done"/></svg></span><span class=""><svg><use href="#i-lock"/></svg></span></div></div><div class="cap"><span class="n">4</span><h2>Dusk</h2></div><p>Warm glow. Your next task sits in a big glass card, the rest wait below.</p></section>
+<section class="opt"><div class="ph e"><div class="pad"><div><div class="hello">Wed 11 Nov</div><div class="big">Morning, Darren</div></div><div class="meter"><i></i></div><div class="list"><div class="row"><span class="ck"></span><div><b>Book MOT</b><span class="sub"><i class="dot home"></i>Home</span></div><span class="mins">15m</span></div><div class="row"><span class="ck"></span><div><b>Set up Cloudflare Worker</b><span class="sub"><i class="dot lab"></i>AI Lab</span></div><span class="mins">1h</span></div><div class="row"><span class="ck"></span><div><b>Reply to Sam's email</b><span class="sub"><i class="dot work"></i>Work</span></div><span class="mins">10m</span></div><div class="row"><span class="ck"></span><div><b>Gym: legs</b><span class="sub"><i class="dot fit"></i>Health</span></div><span class="mins">50m</span></div><div class="row done"><span class="ck on"><svg><use href="#i-tick"/></svg></span><div><b>Order bin bags</b></div><span class="mins">5m</span></div></div></div><div class="dock"><span class="on"><svg><use href="#i-sun"/></svg></span><span class=""><svg><use href="#i-note"/></svg></span><span class="plus"><svg><use href="#i-plus"/></svg></span><span class=""><svg><use href="#i-mark"/></svg></span><span class=""><svg><use href="#i-done"/></svg></span><span class=""><svg><use href="#i-lock"/></svg></span></div></div><div class="cap"><span class="n">5</span><h2>Daylight</h2></div><p>The same Depth idea in light, for daytime. Frosted white on a pale glow.</p></section>
+</div>
+<p class="note">Sample tasks from the app's demo mode.</p>
+</div>
