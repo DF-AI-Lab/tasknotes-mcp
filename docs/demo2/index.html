@@ -116,7 +116,22 @@ svg{width:20px;height:20px;fill:none;stroke:currentColor;stroke-width:1.7;stroke
 .row .main{min-width:0;flex:1}
 .row b{font-weight:600;font-size:15.5px;display:block;overflow-wrap:anywhere}
 .row .end{font-size:13px;color:var(--muted);white-space:nowrap}
-.row.isdone .main{opacity:.55}
+.row{position:relative}
+/* Spring tick: strike draws, row drops to one line, then springs into place */
+.ttl{background:linear-gradient(var(--muted),var(--muted)) no-repeat 0 55%/0% 1.5px;transition:background-size .25s ease,color .25s ease}
+.row.isdone .ttl,.row.ticking .ttl{background-size:100% 1.5px;color:var(--muted)}
+.row.isdone,.row.isdone .open{min-height:46px}
+.row.isdone .open{padding:10px 0}
+.row.isdone b{font-size:14.5px;font-weight:500}
+.row.isdone .meta{display:none}
+.row.isdone .end{font-family:var(--mono);font-size:12px}
+.row.ticking .tick{background:var(--accent);border-color:var(--accent);color:var(--on-accent);animation:pop .4s cubic-bezier(.3,1.8,.5,1)}
+@keyframes pop{50%{transform:scale(1.3)}}
+.row.lift{z-index:3;margin:0 -16px;padding:0 16px;width:auto;border-radius:10px;background:#2a2b31;border-bottom-color:transparent;box-shadow:0 14px 28px -8px rgba(0,0,0,.65);transition:background .3s,box-shadow .3s}
+.row .pin{width:36px;height:44px;margin-right:-8px;border-radius:10px;flex:none}
+.row .pin.on{background:none;color:var(--text)}
+.pin.on svg{fill:currentColor}
+.pin.pop svg{animation:pop .4s cubic-bezier(.3,1.8,.5,1)}
 .tickbtn{width:44px;height:44px;margin:-10px;display:grid;place-items:center;flex:none;border-radius:50%}
 .row.note .glyph{width:24px;height:24px;display:grid;place-items:center;color:var(--muted);flex:none}
 .row.note .meta{display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
@@ -326,8 +341,14 @@ function metaHtml(r,extra){
   return '<span class="meta">'+parts.join(' · ')+'</span>';
 }
 function taskRow(r,extra){
-  return '<div class="row'+(r.done?' isdone':'')+'"><button class="tickbtn" data-act="tick" data-id="'+r.id+'" aria-label="'+(r.done?'Undo':'Done')+'"><span class="tick'+(r.done?' on':'')+'">'+(r.done?ico('tick'):'')+'</span></button>'+
-    '<button class="open" data-act="open" data-id="'+r.id+'"><span class="main"><b>'+esc(r.title)+'</b>'+metaHtml(r,extra)+'</span><span class="end">'+fmtMins(r.estimate_mins)+'</span></button></div>';
+  var end=r.done?doneTime(r):fmtMins(r.estimate_mins);
+  return '<div class="row'+(r.done?' isdone':'')+'" data-fid="r'+r.id+'"><button class="tickbtn" data-act="tick" data-id="'+r.id+'" aria-label="'+(r.done?'Undo':'Done')+'"><span class="tick'+(r.done?' on':'')+'">'+(r.done?ico('tick'):'')+'</span></button>'+
+    '<button class="open" data-act="open" data-id="'+r.id+'"><span class="main"><b><span class="ttl">'+esc(r.title)+'</span></b>'+metaHtml(r,extra)+'</span><span class="end">'+end+'</span></button>'+
+    (r.done?'':'<button class="pin'+(pinned(r)?' on':'')+'" data-act="pin" data-id="'+r.id+'" aria-label="'+(pinned(r)?'Unpin':'Pin')+'" aria-pressed="'+pinned(r)+'">'+ico('pin')+'</button>')+'</div>';
+}
+function doneTime(r){
+  var d=new Date(r.done_at||r.updated);
+  return isNaN(d)?'':String(d.getHours()).padStart(2,'0')+':'+String(d.getMinutes()).padStart(2,'0');
 }
 function noteRow(r){
   var first=(r.details||'').split('\n')[0];
@@ -391,7 +412,7 @@ function dayScreen(){
     out.push(label('Pinned','pin'));
     out.push(panel(pins.map(function(r){return isTask(r)?taskRow(r,esc(cap(dueLabel(dayKey(r),t)))):noteRow(r)})));
   }
-  var then=ordered(dayTasks.filter(function(r){return r!==now&&!r.done})).concat(ordered(dayTasks.filter(function(r){return r.done})));
+  var then=ordered(dayTasks.filter(function(r){return r!==now&&!r.done})).concat(dayTasks.filter(function(r){return r.done}).sort(function(a,b){return (a.done_at||'').localeCompare(b.done_at||'')}));
   if(then.length){out.push(label('Then'));out.push(panel(then.map(function(r){return taskRow(r)})))}
   else if(!isToday)out.push('<p class="quiet">Nothing planned</p>');
   return out.join('');
@@ -474,11 +495,40 @@ function hideToast(){clearTimeout(toastTimer);$toast.classList.remove('show');to
 
 /* ---------- actions ---------- */
 function mutate(fn){fn();save();render()}
+/* FLIP: note where rows are, re-render, then spring each row from its old spot to its new one */
+var still=function(){return window.matchMedia&&matchMedia('(prefers-reduced-motion: reduce)').matches};
+function flip(fn,liftId){
+  if(still()||!Element.prototype.animate){fn();return}
+  var before={};
+  Array.prototype.forEach.call($scroll.querySelectorAll('[data-fid]'),function(el){before[el.getAttribute('data-fid')]=el.getBoundingClientRect().top});
+  fn();
+  Array.prototype.forEach.call($scroll.querySelectorAll('[data-fid]'),function(el){
+    var id=el.getAttribute('data-fid'),b=before[id];
+    if(b==null){el.animate([{opacity:0,transform:'scale(.97)'},{opacity:1,transform:'none'}],{duration:320,easing:'ease-out'});return}
+    var dy=b-el.getBoundingClientRect().top,lift=id===liftId;
+    if(Math.abs(dy)<1&&!lift)return;
+    if(lift)el.classList.add('lift');
+    var a=el.animate(lift?[{transform:'translateY('+dy+'px) scale(1.03)'},{transform:'scale(1.03)',offset:.7},{transform:'none'}]
+      :[{transform:'translateY('+dy+'px)'},{transform:'none'}],{duration:lift?700:550,easing:'cubic-bezier(.34,1.4,.5,1)'});
+    if(lift)a.onfinish=function(){el.classList.remove('lift')};
+  });
+}
+var tickBusy=false;
+function setDone(r,on){r.done=on;r.done_at=on?nowIso():'';r.updated=nowIso()}
 function tick(id){
-  var r=findItem(id);if(!r)return;
-  var was=r.done;
-  mutate(function(){r.done=!was;r.done_at=r.done?nowIso():'';r.updated=nowIso()});
-  if(!was)toast('Done: '+r.title,function(){mutate(function(){r.done=false;r.done_at='';r.updated=nowIso()})});
+  var r=findItem(id);if(!r||tickBusy)return;
+  var was=r.done,el=$scroll.querySelector('[data-fid="r'+id+'"]');
+  var go=function(){
+    tickBusy=false;
+    flip(function(){mutate(function(){setDone(r,!was)})},'r'+id);
+    if(!was)toast('Done: '+r.title,function(){flip(function(){mutate(function(){setDone(r,false)})},'r'+id)});
+  };
+  if(!was&&el&&!still()){
+    tickBusy=true;
+    el.classList.add('ticking');
+    var t=el.querySelector('.tick');if(t)t.innerHTML=ico('tick');
+    setTimeout(go,260);
+  }else go();
 }
 function later(id){
   var r=findItem(id);if(!r)return;
@@ -486,7 +536,11 @@ function later(id){
   mutate(function(){r.due=ymd(addDays(today(),1));r.updated=nowIso()});
   toast('Moved to tomorrow',function(){mutate(function(){r.due=old;r.updated=nowIso()})});
 }
-function togglePin(id){var r=findItem(id);if(r)mutate(function(){r.important=pinned(r)?'':'yes';r.updated=nowIso()})}
+function togglePin(id){
+  var r=findItem(id);if(!r)return;
+  flip(function(){mutate(function(){r.important=pinned(r)?'':'yes';r.updated=nowIso()})},'r'+id);
+  var p=$scroll.querySelector('[data-fid="r'+id+'"] .pin');if(p)p.classList.add('pop');
+}
 
 /* ---------- sheet ---------- */
 function openSheet(id){
