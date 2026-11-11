@@ -520,7 +520,7 @@ function dayScreen(){
 function notesScreen(){
   var cats=state.cats.filter(live);
   var list=items().filter(function(r){return !isTask(r)&&(!nf.review||r.review_later)&&(!nf.cat||r.category===nf.cat)});
-  var chips='<div class="chips filters" role="toolbar" aria-label="Filter notes"><button class="chip'+(nf.review?' on':'')+'" data-act="nfreview" aria-pressed="'+nf.review+'">'+ico('flag')+'Review</button><i class="sep" aria-hidden="true"></i>'+
+  var chips='<div class="chips filters" role="toolbar" aria-label="Filter notes"><button class="chip'+(!nf.review&&!nf.cat?' on':'')+'" data-act="nfall" aria-pressed="'+(!nf.review&&!nf.cat)+'">All</button><button class="chip'+(nf.review?' on':'')+'" data-act="nfreview" aria-pressed="'+nf.review+'">'+ico('flag')+'Review</button><i class="sep" aria-hidden="true"></i>'+
     cats.map(function(c){return '<button class="chip'+(nf.cat===c.name?' on':'')+'" data-act="nfcat" data-v="'+esc(c.name)+'" aria-pressed="'+(nf.cat===c.name)+'"><i class="dot" style="background:'+esc(c.colour)+'"></i>'+esc(c.name)+'</button>'}).join('')+'</div>';
   var out=[head('Notes'),chips];
   var pin=list.filter(pinned),rest=list.filter(function(r){return !pinned(r)});
@@ -782,6 +782,7 @@ document.addEventListener('click',function(e){
     case 'add':openSheet(null);break;
     case 'undo':var u=toastUndo;hideToast();if(u)u();break;
     case 'nfreview':nf.review=!nf.review;render();break;
+    case 'nfall':nf={review:false,cat:''};render();break;
     case 'nexpand':flip(function(){noteOpen=id;render()});break;
     case 'nfold':flip(function(){noteOpen=null;render()});break;
     case 'rlater':(function(){var r=findItem(id);if(r)mutate(function(){r.review_later=!r.review_later;r.updated=nowIso()})})();break;
