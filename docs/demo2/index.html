@@ -47,7 +47,7 @@ svg{width:20px;height:20px;fill:none;stroke:currentColor;stroke-width:1.7;stroke
 .head{display:flex;flex-direction:column;gap:14px}
 .fullbar{height:3px;border-radius:99px;background:var(--surface-2);overflow:hidden}
 .fullbar i{display:block;height:100%;border-radius:99px;background:var(--accent);transition:width .25s}
-.head-row{display:flex;align-items:center;gap:12px}
+.head-row{display:flex;align-items:center;gap:12px;min-height:46px}
 .app-icon{width:40px;height:40px;border-radius:10px;flex:none;display:block;stroke:none}
 .head-text{flex:1;min-width:0}
 .eyebrow{font-size:13px;color:#8b8d94;display:flex;align-items:center;gap:6px;white-space:nowrap}
@@ -337,14 +337,14 @@ var panel=function(rows){return '<div class="panel">'+rows.join('')+'</div>'};
 var label=function(text,icon){return '<div class="label">'+(icon?ico(icon):'')+esc(text)+'</div>'};
 function head(title,day){
   var h='<header class="head"><div class="head-row"><button class="icon-wrap'+(upd?' warn':'')+'" data-act="refresh" aria-label="'+(upd?'Update ready, tap to update':'Refresh')+'"><svg class="app-icon" aria-hidden="true"><use href="#tn"/></svg><i class="status"></i></button><div class="head-text">';
-  if(day)h+='<div class="eyebrow">'+(upd?'<i class="dot"></i>New version ready':esc(day.month)+'<span class="clock" data-clock></span>')+'</div>';
+  h+='<div class="eyebrow">'+(upd?'<i class="dot"></i>New version ready':esc(day?day.month:today().toLocaleDateString('en-GB',{month:'long'}))+'<span class="clock" data-clock></span>')+'</div>';
   h+='<h1 class="title">'+esc(title)+'</h1></div>';
   if(day){
     var C=135.1,dash=(day.total?C*day.done/day.total:0).toFixed(1)+' '+C;
     h+='<div class="ring" role="img" aria-label="'+day.done+' of '+day.total+' done"><svg viewBox="0 0 46 46" aria-hidden="true"><circle class="fill" cx="23" cy="23" r="21.5" stroke-dasharray="'+dash+'"/></svg>'+day.done+'/'+day.total+'</div>';
   }
   h+='<button class="icon-btn plain" data-act="settings" aria-label="Settings">'+ico('dots')+'</button></div>';
-  if(day&&upd)h+='<button class="update-banner" data-act="update" aria-label="Update ready, tap to update">Update ready <span>Tap to update ›</span></button>';
+  if(upd)h+='<button class="update-banner" data-act="update" aria-label="Update ready, tap to update">Update ready <span>Tap to update ›</span></button>';
   var pct=day&&day.mins?Math.max(4,Math.min(100,Math.round(day.mins/240*100))):0;
   h+='<div class="fullbar" role="img" aria-label="'+(day?'Day '+pct+'% full':'')+'"><i style="width:'+pct+'%"></i></div>';
   return h+'</header>';
