@@ -24,5 +24,5 @@ Made by Darren. Local-only demo, saved on the device (`tasknotes-demo2`).
 - No flash or page reset. Turned off if the phone asks for reduced motion.
 - Bottom bar "Line + dot" (picked from 5 mocks): straight line, a small gap around the +, dot under the active tab. Text size unchanged.
 - The + button has more shading: soft drop shadow, faint glow, light top edge.
-- Header stays fixed at the top; only the middle scrolls (fades under the header).
+- Header sits outside the scroll area (no box behind it); only the middle scrolls and fades out at the top.
 - Bar line is now drawn edge to edge and a bit brighter so it always shows.

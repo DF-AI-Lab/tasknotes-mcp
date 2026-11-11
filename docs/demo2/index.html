@@ -41,12 +41,12 @@ svg{width:20px;height:20px;fill:none;stroke:currentColor;stroke-width:1.7;stroke
 
 /* ===== FRAME ===== */
 .app{height:100%;max-width:430px;margin:0 auto;display:flex;flex-direction:column}
-.scroll{flex:1;min-height:0;overflow-y:auto;overflow-x:hidden;padding:calc(20px + env(safe-area-inset-top)) var(--gutter) 120px;display:flex;flex-direction:column;gap:var(--gap)}
+.top{flex:none;padding:calc(20px + env(safe-area-inset-top)) var(--gutter) 0}
+.scroll{flex:1;min-height:0;overflow-y:auto;overflow-x:hidden;padding:16px var(--gutter) 120px;
+  -webkit-mask-image:linear-gradient(transparent,#000 16px);mask-image:linear-gradient(transparent,#000 16px);display:flex;flex-direction:column;gap:var(--gap)}
 
 /* ===== HEADER ===== */
-.head{display:flex;flex-direction:column;gap:14px;position:sticky;top:calc(-20px - env(safe-area-inset-top));z-index:5;background:var(--bg);
-  margin:calc(-20px - env(safe-area-inset-top)) calc(-1 * var(--gutter)) 0;padding:calc(20px + env(safe-area-inset-top)) var(--gutter) 12px}
-.head::after{content:"";position:absolute;left:0;right:0;top:100%;height:18px;background:linear-gradient(var(--bg),rgba(16,17,20,0));pointer-events:none}
+.head{display:flex;flex-direction:column;gap:14px}
 .fullbar{height:3px;border-radius:99px;background:var(--surface-2);overflow:hidden}
 .fullbar i{display:block;height:100%;border-radius:99px;background:var(--accent);transition:width .25s}
 .head-row{display:flex;align-items:center;gap:12px;min-height:46px}
@@ -208,6 +208,7 @@ textarea.field{font:400 15px/1.45 var(--font);min-height:96px}
 </svg>
 
 <main class="app">
+  <div class="top" id="top"></div>
   <div class="scroll" id="scroll"></div>
   <nav class="bar" aria-label="Screens">
     <button class="tab" data-act="tab" data-v="day">Day</button>
@@ -455,6 +456,8 @@ function secretsScreen(){
 function render(){
   var html=screen==='day'?dayScreen():screen==='notes'?notesScreen():screen==='done'?doneScreen():secretsScreen();
   $scroll.innerHTML=html;
+  var hd=$scroll.querySelector('.head'),$top=document.getElementById('top');
+  $top.innerHTML='';if(hd)$top.appendChild(hd);
   tickClock();
   Array.prototype.forEach.call(document.querySelectorAll('.tab'),function(b){
     var on=b.getAttribute('data-v')===screen;b.classList.toggle('on',on);
