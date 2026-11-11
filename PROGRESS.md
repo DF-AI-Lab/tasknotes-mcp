@@ -216,3 +216,5 @@ Cloudflare = df.ai.lab.hq account.
 - v.1.15 / demo.v.15: ✏️ new task screen (mock B, minimal): name, 3 pills (category · date · time, tap to open), Notes box. "+ New" category right there. Tasks get a `details` column (Sheet + Worker + Claude add_task/edit_task). 📝 shows on tasks with notes. Redeploy the Worker so Claude sees notes.
 - v.1.12 / demo.v.12: ⋯ on each category tile: ✏️ Edit, ✅ Tick off all, 🗑️ Delete. Both ask "are you sure", then 10 seconds to undo.
 - v.1.11 / demo.v.11: stays signed in. No 5 min lock. Only 🔒 Lock now or Sign out ask for the passcode again. 🔐 Secrets still asks every time.
+
+- New icon (TN with red/cyan edges and green dot) for /next/: install icons, Passport logo, header. Live app icons untouched.

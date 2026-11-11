@@ -1,10 +1,10 @@
 /* TaskNotes (new look, /next/) - the service worker: keeps the app files on the phone so it opens with no internet.
    Its own cache name (tnnext-), so it never touches the live app's cache. Bump VERSION with every change. */
 const VERSION = '2.0';
-const CACHE = 'tnnext-' + VERSION;
+const CACHE = 'tnnext-b' + VERSION;
 const FILES = ['./', 'index.html', 'app.css', 'app.js', 'manifest.json', 'passport/theme.json',
   '../store.js', '../vault.js', '../config.js', '../passport-lock.js', '../passport/config.js', '../passport/google.js', '../passport/passport.js',
-  '../passport/ui.js', '../passport/passport.css', '../sync.js', '../gsheet.js', '../icon-192.png', '../icon-512.png', '../icon-maskable-512.png', '../invite-qr.svg'];
+  '../passport/ui.js', '../passport/passport.css', '../sync.js', '../gsheet.js', 'icon-192.png', 'icon-512.png', 'icon-maskable-512.png', '../invite-qr.svg'];
 
 self.addEventListener('install', e => {
   e.waitUntil((async () => {
