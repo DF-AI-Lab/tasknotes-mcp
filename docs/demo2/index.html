@@ -191,6 +191,8 @@ textarea.field{font:400 15px/1.45 var(--font);min-height:96px}
 .sbody.open .nline{opacity:0;transform:translateY(8px);pointer-events:none}
 .pills3 .chip.open{background:var(--surface-2);color:var(--text);box-shadow:inset 0 0 0 1px rgba(255,255,255,.35)}
 @media (prefers-reduced-motion:reduce){.drawer,.sheet .sbody .nline{transition:none}}
+.addcat{width:36px;padding:0;justify-content:center}.addcat svg{width:16px;height:16px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round}
+.newcat{width:150px;animation:catin .2s ease}@keyframes catin{from{opacity:0;transform:scale(.9)}}
 .pills3{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
 .pills3 .chip{height:36px;justify-content:center;width:100%;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .sbar{display:flex;gap:10px;align-items:center}
@@ -597,7 +599,7 @@ function pillsHtml(){
 }
 function drawerHtml(){
   var f=sh.f,o=sh.open,c=function(act,v,on,inner){return '<button class="chip'+(on?' on':'')+'" data-act="'+act+'" data-v="'+esc(v)+'">'+inner+'</button>'};
-  if(o==='cat')return '<div class="chips">'+state.cats.filter(live).map(function(k){return c('setcat',k.name,k.name===f.category,'<i class="dot" style="background:'+esc(k.colour)+'"></i>'+esc(k.name))}).join('')+c('setcat','',!f.category,'None')+'</div>';
+  if(o==='cat')return '<div class="chips">'+state.cats.filter(live).map(function(k){return c('setcat',k.name,k.name===f.category,'<i class="dot" style="background:'+esc(k.colour)+'"></i>'+esc(k.name))}).join('')+c('setcat','',!f.category,'None')+(sh.newcat?'<input class="dt newcat" id="f-newcat" placeholder="New category" maxlength="24" autocomplete="off" aria-label="New category name">':'<button class="chip addcat" data-act="newcat" aria-label="Add category">'+ico('plus')+'</button>')+'</div>';
   if(o==='date'){
     var ts=todayStr(),tm=ymd(addDays(today(),1));
     return '<div class="chips">'+c('setdate',ts,f.due===ts,'Today')+c('setdate',tm,f.due===tm,'Tomorrow')+
@@ -628,9 +630,15 @@ function sbarHtml(){
 function delHtml(){
   return sh.id?'<button class="ib del" data-act="delete" aria-label="Delete">'+ico('trash')+'</button>':'';
 }
+function addCat(name){
+  name=name.trim();if(!name)return;
+  var have=state.cats.filter(live).find(function(c){return c.name.toLowerCase()===name.toLowerCase()});
+  if(!have){have={name:name,colour:'var(--cat-'+(state.cats.length%6+1)+')',deleted_at:''};state.cats.push(have);save()}
+  sh.f.category=have.name;sh.newcat=false;setOpen(null);
+}
 function refreshDrawer(){refreshPills();var d=document.getElementById('drawer');if(d&&sh.open)d.innerHTML=drawerHtml()}
 function setOpen(k){
-  sh.open=k;refreshPills();
+  sh.open=k;sh.newcat=false;refreshPills();
   var b=document.getElementById('sbody'),d=document.getElementById('drawer');if(!b)return;
   if(k){d.innerHTML=drawerHtml();d.scrollTop=0}
   b.classList.toggle('open',!!k);
@@ -706,7 +714,8 @@ document.addEventListener('click',function(e){
       else if(v==='review'){sh.f.review_later=!sh.f.review_later;refreshPills()}
       else{setOpen(sh.open===v?null:v)}
       break;
-    case 'setcat':sh.f.category=v;setOpen(null);break;
+    case 'setcat':sh.f.category=v;sh.newcat=false;setOpen(null);break;
+    case 'newcat':sh.newcat=true;refreshDrawer();var ni=document.getElementById('f-newcat');if(ni)ni.focus();break;
     case 'setdate':sh.f.due=v;setOpen(null);break;
     case 'settime':sh.f.time=v;refreshDrawer();break;
     case 'setmins':sh.f.estimate_mins=Number(v)||0;setOpen(null);break;
@@ -724,7 +733,12 @@ document.addEventListener('input',function(e){
   }else if(t.id==='f-date'){sh.f.due=t.value;refreshPills()}
   else if(t.id==='f-time'){sh.f.time=t.value;refreshPills()}
 });
+document.addEventListener('focusout',function(e){
+  if(sh&&sh.newcat&&e.target.id==='f-newcat'&&e.target.value.trim())addCat(e.target.value);
+});
 document.addEventListener('keydown',function(e){
+  if(e.key==='Escape'&&sh&&sh.newcat){sh.newcat=false;refreshDrawer();return}
+  if(e.key==='Enter'&&sh&&e.target.id==='f-newcat'){e.preventDefault();addCat(e.target.value);return}
   if(e.key==='Escape'&&$sheet.classList.contains('show'))closeSheet();
   if(e.key==='Enter'&&sh&&e.target.id==='f-title'){e.preventDefault();saveSheet()}
 });
