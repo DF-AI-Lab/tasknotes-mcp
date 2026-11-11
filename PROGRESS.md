@@ -131,6 +131,14 @@
   Today / Tomorrow / Later list with time + category pill, sticky note cards (tap = review flag),
   quick-add box (Task/Note toggle), bottom nav Day / Notes / Review / Done, undo toast.
 
+## 🎨 Demo 2 round 3 (11 Nov 2026), `docs/demo2/`
+- Spring tick: tick pops, line crosses out, card lifts and springs to the bottom as one line with the time
+- Pin button on every task row, springs to the top
+- Bottom bar "line + dot" with a shaded + button
+- Header fixed, only the middle scrolls
+- Mocks: https://claude.ai/artifact/B6mLMuojAdb2BQMxThzfzK
+- Branch `claude/confident-gates-3t4exr`, needs merging to main to show on the phone
+
 ## Next step
 Change MCP_PIN to a strong one + redeploy.
 
