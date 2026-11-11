@@ -263,6 +263,14 @@ textarea.field{font:400 15px/1.45 var(--font);min-height:96px}
 .fchip{flex:none;display:flex;align-items:center;gap:6px;height:32px;max-width:200px;padding:0 4px 0 10px;border-radius:9px;background:var(--surface);box-shadow:inset 0 0 0 1px var(--edge);font-size:13px;color:var(--text)}
 .cfiles{display:flex;flex-wrap:wrap;gap:6px;margin-top:10px}
 .cfiles .fchip{padding-right:10px}
+.dcats{flex-wrap:wrap}
+.dpickbig{display:flex;align-items:center;justify-content:center;gap:8px;width:100%;height:88px;border-radius:14px;border:1.5px dashed var(--edge);color:var(--muted);font:500 15px var(--font)}
+.dpickbig svg{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round}
+.fchip.dfile{max-width:none;width:100%;height:56px;padding:0 6px 0 14px;gap:10px;border-radius:14px;font-size:15px}
+.fchip.dfile svg{width:20px;height:20px}
+.fchip.dfile b{flex:1}
+.fchip.dfile i{font-style:normal;color:var(--muted);font-size:13px}
+.fchip.dfile button{width:auto;height:36px;padding:0 12px;border-radius:10px;color:var(--text);background:rgba(255,255,255,.06);font:500 13px var(--font)}
 .fchip b{font-weight:500;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .fchip svg{width:15px;height:15px;flex:none;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
 .fchip>svg{color:var(--muted)}
@@ -759,6 +767,18 @@ function drawerHtml(){
 function fsize(n){return n>1048576?(n/1048576).toFixed(1)+' MB':Math.max(1,Math.round(n/1024))+' KB'}
 function filesHtml(){return (sh.f.files||[]).map(function(x,i){return '<span class="fchip">'+ico('file')+'<b>'+esc(x.name)+'</b><button data-act="unattach" data-v="'+i+'" aria-label="Remove '+esc(x.name)+'">'+ico('x')+'</button></span>'}).join('')}
 function pickFile(cb){var i=document.createElement('input');i.type='file';i.multiple=true;i.style.cssText='position:fixed;left:-999px;opacity:0';document.body.appendChild(i);i.onchange=function(){cb(Array.prototype.map.call(i.files,function(f){return {name:f.name,size:f.size}}));i.remove()};i.click()}
+var newDoc=null;
+function docFileHtml(){return newDoc.file?'<span class="fchip dfile">'+ico('file')+'<b>'+esc(newDoc.file.name)+'</b><i>'+esc(fsize(newDoc.file.size))+'</i><button data-act="dpick" aria-label="Change file">Change</button></span>':'<button class="dpickbig" data-act="dpick">'+ico('plus')+'Choose a file</button>'}
+function openDoc(){
+  sh=null;newDoc={file:null,cat:''};$sheet.setAttribute('aria-label','New document');
+  $sheet.innerHTML='<div class="grab" aria-hidden="true"></div>'+
+    '<input class="tline" id="d-name" placeholder="What is it?" autocomplete="off" maxlength="80" aria-label="Document name">'+
+    '<div class="chips dcats">'+state.cats.filter(live).map(function(k){return '<button class="chip" data-act="dcat" data-v="'+esc(k.name)+'"><i class="dot" style="background:'+esc(k.colour)+'"></i>'+esc(k.name)+'</button>'}).join('')+'</div>'+
+    '<div id="d-file">'+docFileHtml()+'</div>'+
+    '<div class="sbar"><button class="btn primary" data-act="dsave" id="d-save" disabled>Save</button></div>';
+  $scrim.classList.add('show');$sheet.classList.add('show');
+}
+function docReady(){var b=document.getElementById('d-save');if(b)b.disabled=!(newDoc.file&&document.getElementById('d-name').value.trim())}
 function openSecret(){
   sh=null;$sheet.setAttribute('aria-label','New secret');
   $sheet.innerHTML='<div class="grab" aria-hidden="true"></div>'+
@@ -862,7 +882,7 @@ document.addEventListener('click',function(e){
     case 'expand':flip(function(){openPick=id;render()});break;
     case 'fold':flip(function(){openPick=null;render()});break;
     case 'add':
-      if(screen==='secrets'&&vf==='docs'){pickFile(function(l){l.forEach(function(x,k){VAULT.docs.unshift({id:'d'+Date.now()+k,title:x.name.replace(/\.[^.]+$/,''),meta:(x.name.split('.').pop()||'File').toUpperCase()+', '+fsize(x.size),cat:'Home'})});render();toast(l.length>1?l.length+' documents added':'Document added')});break}
+      if(screen==='secrets'&&vf==='docs'){openDoc();break}
       if(screen==='secrets'){openSecret();break}
       openSheet(null);break;
     case 'attach':pickFile(function(l){sh.f.files=(sh.f.files||[]).concat(l);document.getElementById('files').innerHTML=filesHtml()});break;
@@ -891,6 +911,11 @@ document.addEventListener('click',function(e){
     case 'close':closeSheet();break;
     case 'save':saveSheet();break;
     case 'vtype':var vs=document.querySelectorAll('[data-act="vtype"]');vs.forEach(function(b){b.classList.toggle('on',b===el)});break;
+    case 'dcat':newDoc.cat=newDoc.cat===v?'':v;document.querySelectorAll('[data-act="dcat"]').forEach(function(b){b.classList.toggle('on',b.getAttribute('data-v')===newDoc.cat)});break;
+    case 'dpick':pickFile(function(l){if(!l.length)return;newDoc.file=l[0];var n=document.getElementById('d-name');if(n&&!n.value.trim())n.value=l[0].name.replace(/\.[^.]+$/,'');document.getElementById('d-file').innerHTML=docFileHtml();docReady()});break;
+    case 'dsave':var dn=document.getElementById('d-name').value.trim();if(!dn||!newDoc.file)break;
+      VAULT.docs.unshift({id:'d'+Date.now(),title:dn,meta:(newDoc.file.name.split('.').pop()||'File').toUpperCase()+', '+fsize(newDoc.file.size),cat:newDoc.cat||'Home'});
+      closeSheet();render();toast('Document saved');break;
     case 'vsave':var nm=document.getElementById('v-name').value.trim(),vv=document.getElementById('v-val').value;if(!nm||!vv)break;
       var ty=document.querySelector('[data-act="vtype"].on');VAULT.secrets.unshift({id:'s'+Date.now(),title:nm,meta:ty?ty.getAttribute('data-v'):'Password',val:vv,cat:'Home'});
       closeSheet();render();toast('Secret saved');break;
@@ -912,6 +937,7 @@ document.addEventListener('click',function(e){
 });
 document.addEventListener('input',function(e){
   var t=e.target;
+  if(t.id==='d-name'){docReady();return}
   if(t.id==='nq'){nq=t.value;noteOpen=null;document.getElementById('nlist').innerHTML=notesList();return}
   if(t.id==='vq'){vq=t.value;vaultOpen=null;document.getElementById('vlist').innerHTML=vaultList();return}
   if(!sh)return;
