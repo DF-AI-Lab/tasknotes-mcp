@@ -149,12 +149,15 @@ svg{width:20px;height:20px;fill:none;stroke:currentColor;stroke-width:1.7;stroke
 .edge{position:absolute;left:50%;bottom:100%;width:390px;height:26px;margin-left:-195px;margin-bottom:-1px;overflow:visible;pointer-events:none;color:var(--glow);stroke-width:1}
 .edge .f{fill:var(--bg);stroke:none}
 .bar::before{content:"";position:absolute;left:0;right:0;bottom:100%;height:48px;background:linear-gradient(to bottom,rgba(16,17,20,0),var(--bg));pointer-events:none}
-.bar{position:relative;flex:none;display:grid;grid-template-columns:1fr 1fr 64px 1fr 1fr;align-items:center;padding:8px 10px calc(14px + env(safe-area-inset-bottom));
+.bar{position:relative;flex:none;border-top:1px solid rgba(255,255,255,.16);display:grid;grid-template-columns:1fr 1fr 64px 1fr 1fr;align-items:center;padding:8px 10px calc(14px + env(safe-area-inset-bottom));
   background:rgba(16,17,20,.92);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px)}
-.tab{height:44px;font-size:14px;font-weight:500;color:var(--muted);text-align:center}
+.tab{height:44px;font-size:14px;font-weight:500;color:var(--muted);text-align:center;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:5px}
+.tab::after{content:"";width:5px;height:5px;border-radius:50%;background:transparent;transition:background .2s}
 .tab.on{color:var(--text);font-weight:700}
-.add{position:relative;z-index:1;width:54px;height:54px;border-radius:50%;background:var(--accent);color:var(--on-accent);display:grid;place-items:center;justify-self:center;align-self:start;margin-top:-25px;
-  box-shadow:0 10px 24px rgba(0,0,0,.6)}
+.tab.on::after{background:var(--text)}
+.add{position:relative;z-index:1;width:54px;height:54px;border-radius:50%;background:var(--accent);color:var(--on-accent);display:grid;place-items:center;justify-self:center;align-self:start;margin-top:-36px;
+  background:linear-gradient(180deg,#fff,#d9dbe3);
+  box-shadow:0 0 0 6px var(--bg),0 16px 30px rgba(0,0,0,.75),0 0 26px rgba(255,255,255,.14),inset 0 -3px 6px rgba(0,0,0,.18),inset 0 1px 0 #fff}
 .add svg{width:22px;height:22px;stroke-width:2}
 
 /* ===== SHEET ===== */
@@ -203,7 +206,7 @@ textarea.field{font:400 15px/1.45 var(--font);min-height:96px}
 
 <main class="app">
   <div class="scroll" id="scroll"></div>
-  <nav class="bar" aria-label="Screens"><svg class="edge" viewBox="0 0 390 26" aria-hidden="true"><path class="f" d="M-400 25.5H156Q162 25.5 165 21A35 35 0 0 1 225 21Q228 25.5 234 25.5H790V26H-400Z"/><path d="M-400 25.5H156Q162 25.5 165 21A35 35 0 0 1 225 21Q228 25.5 234 25.5H790"/></svg>
+  <nav class="bar" aria-label="Screens">
     <button class="tab" data-act="tab" data-v="day">Day</button>
     <button class="tab" data-act="tab" data-v="notes">Notes</button>
     <button class="add" data-act="add" aria-label="Add"><svg><use href="#i-plus"/></svg></button>

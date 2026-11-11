@@ -22,3 +22,5 @@ Made by Darren. Local-only demo, saved on the device (`tasknotes-demo2`).
 - Pin button on each task row. Tap it and the card springs to the top. Line icon, no emoji.
 - Undo (toast or tapping the tick again) springs it back up.
 - No flash or page reset. Turned off if the phone asks for reduced motion.
+- Bottom bar "Line + dot" (picked from 5 mocks): straight line, a small gap around the +, dot under the active tab. Text size unchanged.
+- The + button has more shading: soft drop shadow, faint glow, light top edge.
