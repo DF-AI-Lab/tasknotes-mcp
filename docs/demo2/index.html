@@ -5,6 +5,8 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="theme-color" content="#101114">
 <title>TaskNotes demo 2</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 120 120'%3E%3Cdefs%3E%3ClinearGradient id='g' x1='0' y1='0' x2='0' y2='1'%3E%3Cstop offset='0' stop-color='%23fff'/%3E%3Cstop offset='1' stop-color='%23d9dbe3'/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect width='120' height='120' rx='26' fill='url(%23g)'/%3E%3Ctext x='58' y='82' text-anchor='middle' font-family='Helvetica,Arial,sans-serif' font-weight='800' font-size='60' letter-spacing='-3' fill='%230c0d12'%3ETN%3C/text%3E%3Ccircle cx='96' cy='26' r='7' fill='%230c0d12'/%3E%3C/svg%3E">
+<link rel="apple-touch-icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 120 120'%3E%3Cdefs%3E%3ClinearGradient id='g' x1='0' y1='0' x2='0' y2='1'%3E%3Cstop offset='0' stop-color='%23fff'/%3E%3Cstop offset='1' stop-color='%23d9dbe3'/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect width='120' height='120' rx='26' fill='url(%23g)'/%3E%3Ctext x='58' y='82' text-anchor='middle' font-family='Helvetica,Arial,sans-serif' font-weight='800' font-size='60' letter-spacing='-3' fill='%230c0d12'%3ETN%3C/text%3E%3Ccircle cx='96' cy='26' r='7' fill='%230c0d12'/%3E%3C/svg%3E">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&family=Bricolage+Grotesque:opsz,wght@12..96,700&family=Geist+Mono:wght@400;500&display=swap">
 <style>
 /* ===== TOKENS (the style guide) ===== */
@@ -39,15 +41,28 @@ svg{width:20px;height:20px;fill:none;stroke:currentColor;stroke-width:1.7;stroke
 
 /* ===== FRAME ===== */
 .app{height:100%;max-width:430px;margin:0 auto;display:flex;flex-direction:column}
-.scroll{flex:1;min-height:0;overflow-y:auto;overflow-x:hidden;padding:calc(20px + env(safe-area-inset-top)) var(--gutter) 24px;display:flex;flex-direction:column;gap:var(--gap)}
+.scroll{flex:1;min-height:0;overflow-y:auto;overflow-x:hidden;padding:calc(20px + env(safe-area-inset-top)) var(--gutter) 120px;display:flex;flex-direction:column;gap:var(--gap)}
 
 /* ===== HEADER ===== */
-.head{display:flex;justify-content:space-between;align-items:center}
-.eyebrow{font-size:14px;color:var(--muted)}
-.title{font:700 31px/1.05 var(--display);letter-spacing:-.02em;margin:0}
-.ring{width:52px;height:52px;position:relative;display:grid;place-items:center;font:500 12.5px var(--mono)}
-.ring svg{position:absolute;inset:0;width:100%;height:100%;stroke-width:3;transform:rotate(-90deg)}
-.ring .track{stroke:rgba(255,255,255,.12)} .ring .fill{stroke:var(--accent);transition:stroke-dasharray .25s}
+.head{display:flex;flex-direction:column;gap:14px;padding:14px 12px;border-radius:var(--r-hero);background:linear-gradient(160deg,var(--surface-2),var(--surface));box-shadow:inset 0 1px 0 var(--edge)}
+.head-row{display:flex;align-items:center;gap:12px}
+.app-icon{width:40px;height:40px;border-radius:10px;flex:none;display:block;stroke:none}
+.head-text{flex:1;min-width:0}
+.eyebrow{font-size:13px;color:#8b8d94;display:flex;align-items:center;gap:6px;white-space:nowrap}
+.eyebrow .dot{width:7px;height:7px;border-radius:99px;background:#f2f3f7}
+.title{font:700 27px/1.05 "Bricolage Grotesque",Geist,sans-serif;letter-spacing:-.02em;margin:0;white-space:nowrap}
+.ring{width:46px;height:46px;border-radius:99px;border:3px solid rgba(255,255,255,.10);display:grid;place-items:center;font:500 12px "Geist Mono",monospace;flex:none;position:relative}
+.ring svg{position:absolute;left:-3px;top:-3px;width:46px;height:46px;stroke:var(--accent);stroke-width:3;stroke-linecap:butt;transform:rotate(-90deg)}
+.ring .fill{transition:stroke-dasharray .25s}
+.icon-btn{width:40px;height:40px;border-radius:99px;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.08);display:grid;place-items:center;flex:none}
+.icon-btn.plain{background:none;border:0;width:28px}
+.icon-btn svg{width:19px;height:19px;stroke:#f2f3f7;fill:none;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+.icon-btn.plain svg{fill:#f2f3f7}
+.icon-btn.spin svg{animation:spin .8s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+.update-banner{display:flex;align-items:center;justify-content:space-between;width:100%;background:#f2f3f7;color:#0c0d12;border:0;border-radius:14px;padding:11px 14px;min-height:44px;font:600 13.5px Geist,sans-serif}
+.update-banner span{font-weight:500;opacity:.7}
+.foot{margin:2px 0 0;text-align:center;color:var(--muted);font:400 12px var(--mono)}
 
 /* ===== WEEK STRIP ===== */
 .week{display:grid;grid-template-columns:repeat(7,1fr);gap:4px}
@@ -109,11 +124,12 @@ svg{width:20px;height:20px;fill:none;stroke:currentColor;stroke-width:1.7;stroke
 .link{height:44px;color:var(--muted);font-size:13px;text-align:center;width:100%}
 
 /* ===== BOTTOM BAR ===== */
-.bar{flex:none;display:grid;grid-template-columns:1fr 1fr 64px 1fr 1fr;align-items:center;padding:8px 10px calc(14px + env(safe-area-inset-bottom));
+.bar::before{content:"";position:absolute;left:0;right:0;bottom:100%;height:48px;background:linear-gradient(to bottom,rgba(16,17,20,0),var(--bg));pointer-events:none}
+.bar{position:relative;flex:none;display:grid;grid-template-columns:1fr 1fr 64px 1fr 1fr;align-items:center;padding:8px 10px calc(14px + env(safe-area-inset-bottom));
   border-top:1px solid var(--line);background:rgba(16,17,20,.92);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px)}
 .tab{height:44px;font-size:14px;font-weight:500;color:var(--muted);text-align:center}
 .tab.on{color:var(--text);font-weight:700}
-.add{width:54px;height:54px;border-radius:50%;background:var(--accent);color:var(--on-accent);display:grid;place-items:center;justify-self:center;margin-top:-22px;
+.add{position:relative;z-index:1;width:54px;height:54px;border-radius:50%;background:var(--accent);color:var(--on-accent);display:grid;place-items:center;justify-self:center;margin-top:-22px;
   box-shadow:0 10px 24px rgba(0,0,0,.6),0 0 0 6px var(--bg)}
 .add svg{width:22px;height:22px;stroke-width:2}
 
@@ -148,7 +164,12 @@ textarea.field{font:400 15px/1.45 var(--font);min-height:96px}
 </style>
 </head>
 <body>
-<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+<svg width="0" height="0" style="position:absolute" aria-hidden="true"><defs>
+<linearGradient id="tn-w" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#fff"/><stop offset="1" stop-color="#d9dbe3"/></linearGradient>
+<symbol id="tn" viewBox="0 0 120 120"><rect width="120" height="120" fill="url(#tn-w)"/><text x="58" y="82" text-anchor="middle" font-family="Bricolage Grotesque" font-weight="800" font-size="60" letter-spacing="-3" fill="#0c0d12">TN</text><circle cx="96" cy="26" r="7" fill="#0c0d12"/></symbol>
+<symbol id="i-refresh" viewBox="0 0 24 24"><path d="M20 11a8 8 0 0 0-14.5-4.5L4 8M4 4v4h4M4 13a8 8 0 0 0 14.5 4.5L20 16M20 20v-4h-4"/></symbol>
+<symbol id="i-dots" viewBox="0 0 24 24"><circle cx="12" cy="5" r="1.2"/><circle cx="12" cy="12" r="1.2"/><circle cx="12" cy="19" r="1.2"/></symbol>
+</defs>
   <symbol id="i-plus" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></symbol>
   <symbol id="i-tick" viewBox="0 0 24 24"><path d="m5 12.5 4.5 4.5L19 7.5"/></symbol>
   <symbol id="i-note" viewBox="0 0 24 24"><path d="M6 4h9l4 4v12H6z"/><path d="M9 11h7M9 15h5"/></symbol>
@@ -281,18 +302,19 @@ function weekDays(){
 function loadH(mins){return Math.round(3+21*Math.min(1,mins/130))}
 
 /* ---------- ui state ---------- */
-var screen='day',picked=todayStr(),nf={review:false,cat:''},sh=null,toastTimer=0,toastUndo=null;
+var screen='day',picked=todayStr(),nf={review:false,cat:''},sh=null,toastTimer=0,toastUndo=null,upd=false,spinning=false;
 var $scroll=document.getElementById('scroll'),$sheet=document.getElementById('sheet'),$scrim=document.getElementById('scrim'),
     $toast=document.getElementById('toast'),$toastMsg=document.getElementById('toast-msg');
 
 /* ---------- html bits ---------- */
 var ico=function(id){return '<svg><use href="#i-'+id+'"/></svg>'};
-var dotHtml=function(name){return '<i class="dot" style="background:'+esc(catOf(name).colour)+'"></i>'};
+var dotHtml=function(name){return name?'<i class="dot" style="background:'+esc(catOf(name).colour)+'"></i>':''};
 function metaHtml(r,extra){
-  var s=dotHtml(r.category)+esc(r.category);
-  if(r.time)s+=' · <span class="mono">'+esc(r.time)+'</span>';
-  if(extra)s+=' · '+extra;
-  return '<span class="meta">'+s+'</span>';
+  var parts=[];
+  if(r.category)parts.push(dotHtml(r.category)+esc(r.category));
+  if(r.time)parts.push('<span class="mono">'+esc(r.time)+'</span>');
+  if(extra)parts.push(extra);
+  return '<span class="meta">'+parts.join(' · ')+'</span>';
 }
 function taskRow(r,extra){
   return '<div class="row'+(r.done?' isdone':'')+'"><button class="tickbtn" data-act="tick" data-id="'+r.id+'" aria-label="'+(r.done?'Undo':'Done')+'"><span class="tick'+(r.done?' on':'')+'">'+(r.done?ico('tick'):'')+'</span></button>'+
@@ -305,8 +327,18 @@ function noteRow(r){
 }
 var panel=function(rows){return '<div class="panel">'+rows.join('')+'</div>'};
 var label=function(text,icon){return '<div class="label">'+(icon?ico(icon):'')+esc(text)+'</div>'};
-function head(eyebrow,title,right){
-  return '<header class="head"><div><div class="eyebrow">'+esc(eyebrow)+'</div><h1 class="title">'+esc(title)+'</h1></div>'+(right||'')+'</header>';
+function head(title,day){
+  var h='<header class="head"><div class="head-row"><svg class="app-icon" aria-hidden="true"><use href="#tn"/></svg><div class="head-text">';
+  if(day)h+='<div class="eyebrow">'+(upd?'<i class="dot"></i>New version ready':esc(day.month))+'</div>';
+  h+='<h1 class="title">'+esc(title)+'</h1></div>';
+  if(day){
+    var C=135.1,dash=(day.total?C*day.done/day.total:0).toFixed(1)+' '+C;
+    h+='<div class="ring" role="img" aria-label="'+day.done+' of '+day.total+' done"><svg viewBox="0 0 46 46" aria-hidden="true"><circle class="fill" cx="23" cy="23" r="21.5" stroke-dasharray="'+dash+'"/></svg>'+day.done+'/'+day.total+'</div>'+
+      '<button class="icon-btn" data-act="refresh" aria-label="Refresh">'+ico('refresh')+'</button>';
+  }
+  h+='<button class="icon-btn plain" data-act="settings" aria-label="Settings">'+ico('dots')+'</button></div>';
+  if(day&&upd)h+='<button class="update-banner" data-act="update" aria-label="Update ready, tap to update">Update ready <span>Tap to update ›</span></button>';
+  return h+'</header>';
 }
 
 /* ---------- screens ---------- */
@@ -316,9 +348,7 @@ function dayScreen(){
   var left=dayTasks.filter(function(r){return !r.done});
   var total=dayTasks.length,done=total-left.length;
   var pd=parseDay(picked);
-  var C=144.5,dash=(total?C*done/total:0).toFixed(1)+' '+C;
-  var ring='<div class="ring" aria-label="'+done+' of '+total+' done"><svg viewBox="0 0 52 52"><circle class="track" cx="26" cy="26" r="23"/><circle class="fill" cx="26" cy="26" r="23" stroke-dasharray="'+dash+'"/></svg>'+done+'/'+total+'</div>';
-  var h=head(pd.toLocaleDateString('en-GB',{month:'long'}),pd.toLocaleDateString('en-GB',{weekday:'short'})+' '+pd.getDate(),ring);
+  var h=head(pd.toLocaleDateString('en-GB',{weekday:'short'})+' '+pd.getDate(),{month:pd.toLocaleDateString('en-GB',{month:'long'}),done:done,total:total});
 
   var strip='<nav class="week" aria-label="This week">'+weekDays().map(function(d){
     var k=ymd(d),mins=all.filter(function(r){return dayKey(r)===k}).reduce(function(a,r){return a+(r.estimate_mins||0)},0);
@@ -332,17 +362,11 @@ function dayScreen(){
   if(isToday){
     if(now){
       var m=now.estimate_mins;
-      out.push('<section class="now" aria-label="Now"><div class="now-top"><span class="meta">'+dotHtml(now.category)+esc(now.category)+(m?' · '+(m<60?m+' min':fmtMins(m)):'')+(now.time?' · <span class="mono">'+esc(now.time)+'</span>':'')+'</span>'+
+      out.push('<section class="now" aria-label="Now"><div class="now-top"><span class="meta">'+[now.category?dotHtml(now.category)+esc(now.category):'',m?(m<60?m+' min':fmtMins(m)):'',now.time?'<span class="mono">'+esc(now.time)+'</span>':''].filter(Boolean).join(' · ')+'</span>'+
         '<button class="pin'+(pinned(now)?' on':'')+'" data-act="pin" data-id="'+now.id+'" aria-label="Pin" aria-pressed="'+pinned(now)+'">'+ico('pin')+'</button></div>'+
         '<button class="open" data-act="open" data-id="'+now.id+'"><h2>'+esc(now.title)+'</h2>'+(now.details?'<p>'+esc(now.details)+'</p>':'')+'</button>'+
         '<div class="btns"><button class="btn" data-act="later" data-id="'+now.id+'">Later</button><button class="btn primary" data-act="tick" data-id="'+now.id+'">Done</button></div></section>');
     }else out.push('<p class="quiet">'+(total?'All done for today':'Nothing planned today')+'</p>');
-  }
-  var pins=all.filter(function(r){return pinned(r)&&!r.done&&dayKey(r)!==picked}).sort(function(a,b){return dayKey(a).localeCompare(dayKey(b))})
-    .concat(items().filter(function(r){return !isTask(r)&&pinned(r)}));
-  if(pins.length){
-    out.push(label('Pinned','pin'));
-    out.push(panel(pins.map(function(r){return isTask(r)?taskRow(r,esc(cap(dueLabel(dayKey(r),t)))):noteRow(r)})));
   }
   if(isToday){
     var late=all.filter(function(r){return !r.done&&r.due&&r.due<ts&&!pinned(r)}).sort(function(a,b){return a.due.localeCompare(b.due)});
@@ -350,6 +374,12 @@ function dayScreen(){
       out.push(label('Late'));
       out.push(panel(late.map(function(r){return taskRow(r,'<span class="late">'+esc(parseDay(r.due).toLocaleDateString('en-GB',{weekday:'short',day:'numeric',month:'short'}))+'</span>')})));
     }
+  }
+  var pins=all.filter(function(r){return pinned(r)&&!r.done&&dayKey(r)!==picked}).sort(function(a,b){return dayKey(a).localeCompare(dayKey(b))})
+    .concat(items().filter(function(r){return !isTask(r)&&pinned(r)}));
+  if(pins.length){
+    out.push(label('Pinned','pin'));
+    out.push(panel(pins.map(function(r){return isTask(r)?taskRow(r,esc(cap(dueLabel(dayKey(r),t)))):noteRow(r)})));
   }
   var then=ordered(dayTasks.filter(function(r){return r!==now&&!r.done})).concat(ordered(dayTasks.filter(function(r){return r.done})));
   if(then.length){out.push(label('Then'));out.push(panel(then.map(function(r){return taskRow(r)})))}
@@ -361,8 +391,7 @@ function notesScreen(){
   var list=items().filter(function(r){return !isTask(r)&&(!nf.review||r.review_later)&&(!nf.cat||r.category===nf.cat)});
   var chips='<div class="chips"><button class="chip'+(nf.review?' on':'')+'" data-act="nfreview" aria-pressed="'+nf.review+'">Review later</button>'+
     cats.map(function(c){return '<button class="chip'+(nf.cat===c.name?' on':'')+'" data-act="nfcat" data-v="'+esc(c.name)+'" aria-pressed="'+(nf.cat===c.name)+'"><i class="dot" style="background:'+esc(c.colour)+'"></i>'+esc(c.name)+'</button>'}).join('')+'</div>';
-  var all=items().filter(function(r){return !isTask(r)}).length;
-  var out=[head(all+(all===1?' note':' notes'),'Notes'),chips];
+  var out=[head('Notes'),chips];
   var pin=list.filter(pinned),rest=list.filter(function(r){return !pinned(r)});
   if(pin.length){out.push(label('Pinned','pin'));out.push(panel(pin.map(noteRow)))}
   if(rest.length){out.push(label(pin.length?'Notes':'All notes'));out.push(panel(rest.map(noteRow)))}
@@ -371,7 +400,7 @@ function notesScreen(){
 }
 function doneScreen(){
   var list=items().filter(function(r){return isTask(r)&&r.done}).sort(function(a,b){return (b.done_at||'').localeCompare(a.done_at||'')});
-  var out=[head('Ticked off','Done')];
+  var out=[head('Done')];
   var groups=[],map={};
   list.forEach(function(r){var k=ymd(new Date(r.done_at||r.updated));if(!map[k]){map[k]={k:k,rows:[]};groups.push(map[k])}map[k].rows.push(r)});
   var ts=todayStr(),ys=ymd(addDays(today(),-1));
@@ -380,11 +409,11 @@ function doneScreen(){
     out.push(panel(g.rows.map(function(r){return taskRow(r)})));
   });
   if(!list.length)out.push('<p class="quiet">Nothing ticked off yet</p>');
-  out.push('<button class="link" data-act="reset">Reset demo</button>');
+  else if(list.length<=5)out.push('<p class="quiet">Nice work.</p>');
   return out.join('');
 }
 function secretsScreen(){
-  return head('Private','Secrets')+'<div class="panel"><p class="quiet">Secrets come back in the live version.</p></div>';
+  return head('Secrets')+'<div class="panel"><p class="quiet">Secrets come back in the live version.</p></div>';
 }
 function render(){
   var html=screen==='day'?dayScreen():screen==='notes'?notesScreen():screen==='done'?doneScreen():secretsScreen();
@@ -425,7 +454,7 @@ function togglePin(id){var r=findItem(id);if(r)mutate(function(){r.important=pin
 function openSheet(id){
   var r=id&&findItem(id);
   sh={id:id||null,open:null,f:r?{title:r.title,details:r.details,category:r.category,due:r.due,time:r.time,estimate_mins:r.estimate_mins,needs:r.needs,important:r.important,review_later:r.review_later}
-    :{title:'',details:'',category:nf.cat&&screen==='notes'?nf.cat:state.cats.filter(live)[0].name,due:screen==='day'?picked:'',time:'',estimate_mins:0,needs:false,important:'',review_later:false}};
+    :{title:'',details:'',category:nf.cat&&screen==='notes'?nf.cat:'',due:screen==='day'?picked:'',time:'',estimate_mins:0,needs:false,important:'',review_later:false}};
   renderSheet();
   $scrim.classList.add('show');$sheet.classList.add('show');
   if(!r)setTimeout(function(){var t=document.getElementById('f-title');if(t)t.focus()},230);
@@ -434,7 +463,7 @@ function closeSheet(){sh=null;$scrim.classList.remove('show');$sheet.classList.r
 function pillsHtml(){
   var f=sh.f,o=sh.open;
   var p=function(key,on,inner){return '<button class="chip'+(on?' on':'')+(o===key?' open':'')+'" data-act="pill" data-v="'+key+'"'+(key==='pin'||key==='review'?' aria-pressed="'+on+'"':'')+'>'+inner+'</button>'};
-  return p('cat',true,dotHtml(f.category)+esc(f.category))+
+  return p('cat',!!f.category,f.category?dotHtml(f.category)+esc(f.category):'Category')+
     p('date',!!f.due,f.due?esc(cap(dueLabel(f.due,today()))):'Date')+
     p('time',!!f.time,f.time?'<span class="mono">'+esc(f.time)+'</span>':'Time')+
     p('mins',!!f.estimate_mins,f.estimate_mins?esc(fmtMins(f.estimate_mins)):'Minutes')+
@@ -443,7 +472,7 @@ function pillsHtml(){
 }
 function drawerHtml(){
   var f=sh.f,o=sh.open,c=function(act,v,on,inner){return '<button class="chip'+(on?' on':'')+'" data-act="'+act+'" data-v="'+esc(v)+'">'+inner+'</button>'};
-  if(o==='cat')return '<div class="chips">'+state.cats.filter(live).map(function(k){return c('setcat',k.name,k.name===f.category,'<i class="dot" style="background:'+esc(k.colour)+'"></i>'+esc(k.name))}).join('')+'</div>';
+  if(o==='cat')return '<div class="chips">'+state.cats.filter(live).map(function(k){return c('setcat',k.name,k.name===f.category,'<i class="dot" style="background:'+esc(k.colour)+'"></i>'+esc(k.name))}).join('')+c('setcat','',!f.category,'None')+'</div>';
   if(o==='date'){
     var ts=todayStr(),tm=ymd(addDays(today(),1));
     return '<div class="chips">'+c('setdate',ts,f.due===ts,'Today')+c('setdate',tm,f.due===tm,'Tomorrow')+
@@ -458,6 +487,7 @@ function headText(){
 }
 function renderSheet(){
   var f=sh.f;
+  $sheet.setAttribute('aria-label','Item');
   $sheet.innerHTML='<div class="sh-head"><span class="label" id="sh-label">'+headText()+'</span><button class="x" data-act="close" aria-label="Close">'+ico('x')+'</button></div>'+
     '<input class="field" id="f-title" data-f="title" placeholder="Title" autocomplete="off" maxlength="160" value="'+esc(f.title)+'">'+
     '<textarea class="field" id="f-details" data-f="details" placeholder="Notes" rows="3">'+esc(f.details)+'</textarea>'+
@@ -485,6 +515,21 @@ function saveSheet(){
   if(screen==='day'&&r.due&&weekDays().some(function(d){return ymd(d)===r.due}))picked=r.due;
   save();closeSheet();render();
 }
+function openSettings(){
+  sh=null;
+  $sheet.setAttribute('aria-label','Settings');
+  $sheet.innerHTML='<div class="sh-head"><span class="label">Settings</span><button class="x" data-act="close" aria-label="Close">'+ico('x')+'</button></div>'+
+    '<div class="panel">'+
+    '<button class="row" data-act="toggleupd" role="switch" aria-checked="'+upd+'" aria-label="Preview update banner" style="padding:0"><span class="open" style="pointer-events:none"><span class="main"><b>Preview update banner</b><span class="meta">Demo only</span></span></span><span class="sw'+(upd?' on':'')+'"><i></i></span></button>'+
+    '<button class="row" data-act="reset" aria-label="Reset demo" style="padding:0"><span class="open" style="pointer-events:none"><span class="main"><b>Reset demo</b><span class="meta">Back to the sample data</span></span></span></button>'+
+    '</div><p class="foot">Demo 2 · saved on this device</p>';
+  $scrim.classList.add('show');$sheet.classList.add('show');
+}
+function refresh(btn){
+  if(spinning)return;
+  spinning=true;btn.classList.add('spin');
+  setTimeout(function(){spinning=false;state=load();render();toast('Up to date')},800);
+}
 function deleteSheet(){
   var r=sh&&sh.id&&findItem(sh.id);if(!r)return;
   closeSheet();
@@ -507,7 +552,11 @@ document.addEventListener('click',function(e){
     case 'undo':var u=toastUndo;hideToast();if(u)u();break;
     case 'nfreview':nf.review=!nf.review;render();break;
     case 'nfcat':nf.cat=nf.cat===v?'':v;render();break;
-    case 'reset':state=seed();save();picked=todayStr();nf={review:false,cat:''};render();toast('Demo reset');break;
+    case 'reset':closeSheet();state=seed();save();picked=todayStr();nf={review:false,cat:''};render();toast('Demo reset');break;
+    case 'settings':openSettings();break;
+    case 'toggleupd':upd=!upd;openSettings();render();break;
+    case 'update':location.reload();break;
+    case 'refresh':refresh(el);break;
     case 'close':closeSheet();break;
     case 'save':saveSheet();break;
     case 'delete':deleteSheet();break;
@@ -533,7 +582,7 @@ document.addEventListener('input',function(e){
   else if(t.id==='f-time'){sh.f.time=t.value;refreshPills()}
 });
 document.addEventListener('keydown',function(e){
-  if(e.key==='Escape'&&sh)closeSheet();
+  if(e.key==='Escape'&&$sheet.classList.contains('show'))closeSheet();
   if(e.key==='Enter'&&sh&&e.target.id==='f-title'){e.preventDefault();saveSheet()}
 });
 
