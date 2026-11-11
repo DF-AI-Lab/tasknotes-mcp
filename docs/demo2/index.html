@@ -183,6 +183,14 @@ textarea.field{font:400 15px/1.45 var(--font);min-height:96px}
 .sheet .tline::placeholder{color:var(--muted);font-weight:500}
 .sheet .nline{width:100%;background:none;border:0;border-bottom:1px solid var(--edge);color:var(--text);font:400 15px/1.45 var(--font);padding:4px 0 14px;min-height:120px;resize:none;outline:none}
 .sheet .nline::placeholder{color:var(--muted)}
+.sbody{position:relative;height:220px;border-bottom:1px solid var(--edge)}
+.sheet .sbody .nline{height:100%;min-height:0;border-bottom:0;transition:opacity .2s ease,transform .25s cubic-bezier(.2,.8,.2,1)}
+.drawer{position:absolute;inset:0;padding-top:2px;overflow-y:auto;opacity:0;transform:translateY(-8px);pointer-events:none;transition:opacity .2s ease,transform .25s cubic-bezier(.2,.8,.2,1)}
+.drawer .chips{gap:8px}.drawer .chip,.drawer .dt{height:36px}
+.sbody.open .drawer{opacity:1;transform:none;pointer-events:auto}
+.sbody.open .nline{opacity:0;transform:translateY(8px);pointer-events:none}
+.pills3 .chip.open{background:var(--surface-2);color:var(--text);box-shadow:inset 0 0 0 1px rgba(255,255,255,.35)}
+@media (prefers-reduced-motion:reduce){.drawer,.sheet .sbody .nline{transition:none}}
 .pills3{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
 .pills3 .chip{height:36px;justify-content:center;width:100%;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .sbar{display:flex;gap:10px;align-items:center}
@@ -607,8 +615,9 @@ function renderSheet(){
   $sheet.setAttribute('aria-label','Item');
   $sheet.innerHTML='<div class="grab" aria-hidden="true"></div><span class="sr" id="sh-label">'+headText()+'</span>'+
     '<input class="tline" id="f-title" data-f="title" placeholder="What is it?" autocomplete="off" maxlength="160" value="'+esc(f.title)+'" aria-label="Title">'+
-    '<div class="chips pills3" id="pills">'+pillsHtml()+'</div><div id="drawer">'+drawerHtml()+'</div>'+
-    '<textarea class="nline" id="f-details" data-f="details" placeholder="Notes" rows="4" aria-label="Notes">'+esc(f.details)+'</textarea>'+
+    '<div class="chips pills3" id="pills">'+pillsHtml()+'</div>'+
+    '<div class="sbody'+(sh.open?' open':'')+'" id="sbody"><textarea class="nline" id="f-details" data-f="details" placeholder="Notes" rows="4" aria-label="Notes">'+esc(f.details)+'</textarea>'+
+    '<div class="drawer" id="drawer">'+drawerHtml()+'</div></div>'+
     '<div class="sbar" id="sbar">'+sbarHtml()+'<button class="btn primary" data-act="save" id="save"'+(f.title.trim()?'':' disabled')+'>Save</button>'+delHtml()+'</div>';
 }
 function sbarHtml(){
@@ -618,6 +627,13 @@ function sbarHtml(){
 }
 function delHtml(){
   return sh.id?'<button class="ib del" data-act="delete" aria-label="Delete">'+ico('trash')+'</button>':'';
+}
+function refreshDrawer(){refreshPills();var d=document.getElementById('drawer');if(d&&sh.open)d.innerHTML=drawerHtml()}
+function setOpen(k){
+  sh.open=k;refreshPills();
+  var b=document.getElementById('sbody'),d=document.getElementById('drawer');if(!b)return;
+  if(k){d.innerHTML=drawerHtml();d.scrollTop=0}
+  b.classList.toggle('open',!!k);
 }
 function refreshPills(){
   document.getElementById('pills').innerHTML=pillsHtml();
@@ -688,12 +704,12 @@ document.addEventListener('click',function(e){
     case 'pill':
       if(v==='pin'){sh.f.important=pinned(sh.f)?'':'yes';refreshPills()}
       else if(v==='review'){sh.f.review_later=!sh.f.review_later;refreshPills()}
-      else{sh.open=sh.open===v?null:v;refreshPills();document.getElementById('drawer').innerHTML=drawerHtml()}
+      else{setOpen(sh.open===v?null:v)}
       break;
-    case 'setcat':sh.f.category=v;renderSheet();break;
-    case 'setdate':sh.f.due=v;renderSheet();break;
-    case 'settime':sh.f.time=v;renderSheet();break;
-    case 'setmins':sh.f.estimate_mins=Number(v)||0;renderSheet();break;
+    case 'setcat':sh.f.category=v;setOpen(null);break;
+    case 'setdate':sh.f.due=v;setOpen(null);break;
+    case 'settime':sh.f.time=v;refreshDrawer();break;
+    case 'setmins':sh.f.estimate_mins=Number(v)||0;setOpen(null);break;
     case 'needs':sh.f.needs=!sh.f.needs;refreshPills();break;
     case 'spin':sh.f.important=pinned(sh.f)?'':'yes';refreshPills();break;
     case 'review':sh.f.review_later=!sh.f.review_later;refreshPills();break;
