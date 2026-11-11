@@ -51,6 +51,7 @@ svg{width:20px;height:20px;fill:none;stroke:currentColor;stroke-width:1.7;stroke
 .app-icon{width:40px;height:40px;border-radius:10px;flex:none;display:block;stroke:none}
 .head-text{flex:1;min-width:0}
 .eyebrow{font-size:13px;color:#8b8d94;display:flex;align-items:center;gap:6px;white-space:nowrap}
+.clock{font:400 12px var(--mono);color:#8b8d94;margin-left:4px;white-space:nowrap}
 .eyebrow .dot{width:7px;height:7px;border-radius:99px;background:#f2f3f7}
 .title{font:700 27px/1.05 "Bricolage Grotesque",Geist,sans-serif;letter-spacing:-.02em;margin:0;white-space:nowrap}
 .ring{width:46px;height:46px;border-radius:99px;border:3px solid rgba(255,255,255,.10);display:grid;place-items:center;font:500 12px "Geist Mono",monospace;flex:none;position:relative}
@@ -331,7 +332,7 @@ var panel=function(rows){return '<div class="panel">'+rows.join('')+'</div>'};
 var label=function(text,icon){return '<div class="label">'+(icon?ico(icon):'')+esc(text)+'</div>'};
 function head(title,day){
   var h='<header class="head"><div class="head-row"><svg class="app-icon" aria-hidden="true"><use href="#tn"/></svg><div class="head-text">';
-  if(day)h+='<div class="eyebrow">'+(upd?'<i class="dot"></i>New version ready':esc(day.month))+'</div>';
+  if(day)h+='<div class="eyebrow">'+(upd?'<i class="dot"></i>New version ready':esc(day.month)+'<span class="clock" data-clock></span>')+'</div>';
   h+='<h1 class="title">'+esc(title)+'</h1></div>';
   if(day){
     var C=135.1,dash=(day.total?C*day.done/day.total:0).toFixed(1)+' '+C;
@@ -422,11 +423,21 @@ function secretsScreen(){
 function render(){
   var html=screen==='day'?dayScreen():screen==='notes'?notesScreen():screen==='done'?doneScreen():secretsScreen();
   $scroll.innerHTML=html;
+  tickClock();
   Array.prototype.forEach.call(document.querySelectorAll('.tab'),function(b){
     var on=b.getAttribute('data-v')===screen;b.classList.toggle('on',on);
     if(on)b.setAttribute('aria-current','page');else b.removeAttribute('aria-current');
   });
 }
+
+/* ---------- clock ---------- */
+function tickClock(){
+  var c=document.querySelector('[data-clock]');if(!c)return;
+  var n=new Date(),tm=pad(n.getHours())+':'+pad(n.getMinutes());
+  c.textContent='· '+n.toLocaleDateString('en-GB',{weekday:'short'})+' '+n.getDate()+' · '+tm;
+  if(c.parentNode.scrollWidth>c.parentNode.clientWidth)c.textContent='· '+tm;
+}
+setInterval(tickClock,15000);
 
 /* ---------- toast ---------- */
 function toast(msg,undo){
