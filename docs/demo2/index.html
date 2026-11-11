@@ -756,7 +756,7 @@ function drawerHtml(){
 }
 function fsize(n){return n>1048576?(n/1048576).toFixed(1)+' MB':Math.max(1,Math.round(n/1024))+' KB'}
 function filesHtml(){return (sh.f.files||[]).map(function(x,i){return '<span class="fchip">'+ico('file')+'<b>'+esc(x.name)+'</b><button data-act="unattach" data-v="'+i+'" aria-label="Remove '+esc(x.name)+'">'+ico('x')+'</button></span>'}).join('')}
-function pickFile(cb){var i=document.createElement('input');i.type='file';i.multiple=true;i.onchange=function(){cb(Array.prototype.map.call(i.files,function(f){return {name:f.name,size:f.size}}))};i.click()}
+function pickFile(cb){var i=document.createElement('input');i.type='file';i.multiple=true;i.style.cssText='position:fixed;left:-999px;opacity:0';document.body.appendChild(i);i.onchange=function(){cb(Array.prototype.map.call(i.files,function(f){return {name:f.name,size:f.size}}));i.remove()};i.click()}
 function headText(){
   var f=sh.f;return (sh.id?'Edit ':'New ')+(isTask(f)?'task':'note');
 }
