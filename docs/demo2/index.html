@@ -152,6 +152,9 @@ svg{width:20px;height:20px;fill:none;stroke:currentColor;stroke-width:1.7;stroke
 .big .bmeta{margin-top:5px;font-size:13.5px;color:var(--muted);display:flex;align-items:center;gap:7px}
 .big .bmeta i{width:7px;height:7px;border-radius:50%;background:var(--c)}
 .big p{margin:14px 0 0;color:var(--muted);font-size:15px;line-height:1.5}
+.bigtick.noteglyph{background:color-mix(in srgb,var(--c) 10%,transparent)}.bigtick.noteglyph svg{width:22px;height:22px;stroke-width:1.8}
+.laterbtn.on{background:color-mix(in srgb,var(--c) 22%,transparent);color:var(--text);box-shadow:inset 0 0 0 1px color-mix(in srgb,var(--c) 50%,transparent)}
+.laterbtn.on svg{fill:currentColor}
 .big-foot{display:flex;align-items:center;justify-content:space-between;margin-top:12px;padding-top:10px;border-top:1px solid rgba(255,255,255,.07)}
 .laterbtn{height:40px;padding:0 16px 0 13px;border-radius:20px;background:rgba(255,255,255,.07);box-shadow:inset 0 0 0 1px rgba(255,255,255,.08);font-size:15px;font-weight:600;display:flex;align-items:center;gap:7px}
 .laterbtn svg{width:16px;height:16px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
@@ -433,10 +436,23 @@ function doneTime(r){
   var d=new Date(r.done_at||r.updated);
   return isNaN(d)?'':String(d.getHours()).padStart(2,'0')+':'+String(d.getMinutes()).padStart(2,'0');
 }
+var noteOpen=null;
+function bigNote(r){
+  var col=r.category?catOf(r.category).colour:'';
+  return '<div class="row big bignote" data-fid="r'+r.id+'"'+(col?' style="--c:'+esc(col)+'"':'')+'><div class="big-in"><div class="big-top">'+
+    '<span class="bigtick noteglyph" aria-hidden="true">'+ico('note')+'</span>'+
+    '<button class="open" data-act="nfold" data-id="'+r.id+'" aria-expanded="true"><h2>'+esc(r.title)+'</h2>'+(r.category?'<span class="bmeta"><i></i>'+esc(r.category)+'</span>':'')+'</button></div>'+
+    (r.details?'<p style="white-space:pre-line">'+esc(r.details)+'</p>':'')+
+    '<div class="big-foot"><button class="laterbtn'+(r.review_later?' on':'')+'" data-act="rlater" data-id="'+r.id+'" aria-pressed="'+!!r.review_later+'">'+ico('flag')+'Review later</button>'+
+    '<span class="acts"><button class="pin'+(pinned(r)?' on':'')+'" data-act="pin" data-id="'+r.id+'" aria-label="'+(pinned(r)?'Unpin':'Pin')+'" aria-pressed="'+pinned(r)+'">'+ico('pin')+'</button>'+
+    '<button class="more" data-act="open" data-id="'+r.id+'" aria-label="Edit">'+ico('dots')+'</button></span></div></div></div>';
+}
 function noteRow(r){
+  if(r.id===noteOpen)return bigNote(r);
   var first=(r.details||'').split('\n')[0];
-  return '<div class="row note"><span class="glyph">'+ico('note')+'</span><button class="open" data-act="open" data-id="'+r.id+'"><span class="main"><b>'+esc(r.title)+'</b>'+
-    '<span class="meta">'+esc(first||r.category)+'</span></span></button></div>';
+  return '<div class="row note" data-fid="r'+r.id+'"><span class="glyph">'+ico('note')+'</span><button class="open" data-act="nexpand" data-id="'+r.id+'" aria-expanded="false"><span class="main"><b>'+esc(r.title)+'</b>'+
+    '<span class="meta">'+esc(first||r.category)+'</span></span></button>'+
+    '<button class="more" data-act="open" data-id="'+r.id+'" aria-label="Edit">'+ico('dots')+'</button></div>';
 }
 var panel=function(rows){return '<div class="panel">'+rows.join('')+'</div>'};
 var label=function(text,icon){return '<div class="label">'+(icon?ico(icon):'')+esc(text)+'</div>'};
@@ -759,6 +775,9 @@ document.addEventListener('click',function(e){
     case 'add':openSheet(null);break;
     case 'undo':var u=toastUndo;hideToast();if(u)u();break;
     case 'nfreview':nf.review=!nf.review;render();break;
+    case 'nexpand':flip(function(){noteOpen=id;render()});break;
+    case 'nfold':flip(function(){noteOpen=null;render()});break;
+    case 'rlater':(function(){var r=findItem(id);if(r)mutate(function(){r.review_later=!r.review_later;r.updated=nowIso()})})();break;
     case 'nfcat':nf.cat=nf.cat===v?'':v;render();break;
     case 'reset':closeSheet();state=seed();save();picked=todayStr();nf={review:false,cat:''};render();toast('Demo reset');break;
     case 'settings':openSettings();break;
