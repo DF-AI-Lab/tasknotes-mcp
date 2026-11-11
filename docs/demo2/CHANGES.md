@@ -12,3 +12,5 @@ Made by Darren. Local-only demo, saved on the device (`tasknotes-demo2`).
 - Stepped bottom bar with a faint top line.
 - Same header height on every screen.
 - Late above Pinned, add sheet starts with no category, "Nice work." on Done, extra bottom padding with a fade.
+- Tab switch: content nudges sideways, header stays put.
+- Bottom bar: line arcs around the raised add button (replaces the step).

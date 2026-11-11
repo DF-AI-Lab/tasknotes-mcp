@@ -131,14 +131,15 @@ svg{width:20px;height:20px;fill:none;stroke:currentColor;stroke-width:1.7;stroke
 .link{height:44px;color:var(--muted);font-size:13px;text-align:center;width:100%}
 
 /* ===== BOTTOM BAR ===== */
-.step{position:absolute;left:50%;bottom:calc(100% - 2px);width:96px;height:26px;transform:translateX(-50%);background:var(--bg);border:1px solid var(--glow);border-bottom:0;border-radius:18px 18px 0 0;pointer-events:none}
-.bar::before{content:"";position:absolute;left:0;right:0;bottom:calc(100% + 1px);height:48px;background:linear-gradient(to bottom,rgba(16,17,20,0),var(--bg));pointer-events:none}
+.edge{position:absolute;left:50%;bottom:100%;width:390px;height:26px;margin-left:-195px;margin-bottom:-1px;overflow:visible;pointer-events:none;color:var(--glow);stroke-width:1}
+.edge .f{fill:var(--bg);stroke:none}
+.bar::before{content:"";position:absolute;left:0;right:0;bottom:100%;height:48px;background:linear-gradient(to bottom,rgba(16,17,20,0),var(--bg));pointer-events:none}
 .bar{position:relative;flex:none;display:grid;grid-template-columns:1fr 1fr 64px 1fr 1fr;align-items:center;padding:8px 10px calc(14px + env(safe-area-inset-bottom));
-  border-top:1px solid var(--glow);background:rgba(16,17,20,.92);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px)}
+  background:rgba(16,17,20,.92);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px)}
 .tab{height:44px;font-size:14px;font-weight:500;color:var(--muted);text-align:center}
 .tab.on{color:var(--text);font-weight:700}
-.add{position:relative;z-index:1;width:54px;height:54px;border-radius:50%;background:var(--accent);color:var(--on-accent);display:grid;place-items:center;justify-self:center;margin-top:-22px;
-  box-shadow:0 10px 24px rgba(0,0,0,.6),0 0 0 6px var(--bg)}
+.add{position:relative;z-index:1;width:54px;height:54px;border-radius:50%;background:var(--accent);color:var(--on-accent);display:grid;place-items:center;justify-self:center;align-self:start;margin-top:-25px;
+  box-shadow:0 10px 24px rgba(0,0,0,.6)}
 .add svg{width:22px;height:22px;stroke-width:2}
 
 /* ===== SHEET ===== */
@@ -187,7 +188,7 @@ textarea.field{font:400 15px/1.45 var(--font);min-height:96px}
 
 <main class="app">
   <div class="scroll" id="scroll"></div>
-  <nav class="bar" aria-label="Screens"><span class="step" aria-hidden="true"></span>
+  <nav class="bar" aria-label="Screens"><svg class="edge" viewBox="0 0 390 26" aria-hidden="true"><path class="f" d="M-400 25.5H156Q162 25.5 165 21A35 35 0 0 1 225 21Q228 25.5 234 25.5H790V26H-400Z"/><path d="M-400 25.5H156Q162 25.5 165 21A35 35 0 0 1 225 21Q228 25.5 234 25.5H790"/></svg>
     <button class="tab" data-act="tab" data-v="day">Day</button>
     <button class="tab" data-act="tab" data-v="notes">Notes</button>
     <button class="add" data-act="add" aria-label="Add"><svg><use href="#i-plus"/></svg></button>
@@ -434,6 +435,24 @@ function render(){
   });
 }
 
+/* ---------- tab transition (header stays put, content nudges) ---------- */
+var ORDER=['day','notes','done','secrets'],navBusy=false,navTo='';
+function goTab(v){
+  var prev=screen;
+  var still=window.matchMedia&&matchMedia('(prefers-reduced-motion: reduce)').matches;
+  if(navBusy){navTo=v;return}
+  if(v===prev||still||!document.body.animate){screen=v;$scroll.scrollTop=0;render();return}
+  var dir=ORDER.indexOf(v)>ORDER.indexOf(prev)?1:-1,E='cubic-bezier(.2,.7,.2,1)';
+  function body(){return Array.prototype.filter.call($scroll.children,function(c){return !c.classList.contains('head')})}
+  navBusy=true;navTo=v;
+  body().forEach(function(c){c.animate([{opacity:1,transform:'none'},{opacity:0,transform:'translateX('+(-12*dir)+'px)'}],{duration:90,easing:'ease-in',fill:'forwards'})});
+  setTimeout(function(){
+    screen=navTo;$scroll.scrollTop=0;render();
+    body().forEach(function(c){c.animate([{opacity:0,transform:'translateX('+(16*dir)+'px)'},{opacity:1,transform:'none'}],{duration:180,easing:E})});
+    setTimeout(function(){navBusy=false},180);
+  },90);
+}
+
 /* ---------- clock ---------- */
 function tickClock(){
   var c=document.querySelector('[data-clock]');if(!c)return;
@@ -561,7 +580,7 @@ document.addEventListener('click',function(e){
   var el=e.target.closest('[data-act]');if(!el)return;
   var act=el.getAttribute('data-act'),id=el.getAttribute('data-id'),v=el.getAttribute('data-v');
   switch(act){
-    case 'tab':screen=v;$scroll.scrollTop=0;render();break;
+    case 'tab':goTab(v);break;
     case 'day':picked=v;render();break;
     case 'tick':tick(id);break;
     case 'later':later(id);break;
