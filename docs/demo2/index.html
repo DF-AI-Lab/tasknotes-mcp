@@ -173,7 +173,7 @@ svg{width:20px;height:20px;fill:none;stroke:currentColor;stroke-width:1.7;stroke
 
 /* ===== CHIPS + PILLS ===== */
 .chips{display:flex;flex-wrap:wrap;gap:8px}
-.filterbar{flex:none;display:flex;align-items:center;gap:18px;margin:-6px calc(-1 * var(--gutter)) -6px 0;border-bottom:1px solid var(--line)}
+.filterbar{flex:none;display:flex;align-items:center;gap:18px;margin:-6px calc(-1 * var(--gutter)) -6px 0}
 .filterbar .chip{height:32px;padding:0;border-radius:0;background:none;font-size:14px;font-weight:500;color:var(--muted);gap:6px;flex:none;box-shadow:inset 0 -2px 0 transparent;transition:color .15s,box-shadow .15s}
 .filterbar .chip.on{background:none;color:var(--text);font-weight:600;box-shadow:inset 0 -2px 0 var(--text)}
 .filters{flex:1;min-width:0;flex-wrap:nowrap;gap:18px;overflow-x:auto;scrollbar-width:none;padding-right:12px;
@@ -494,7 +494,6 @@ function head(title,day){
   }
   h+='<button class="icon-btn plain" data-act="settings" aria-label="Settings">'+ico('dots')+'</button></div>';
   if(upd)h+='<button class="update-banner" data-act="update" aria-label="Update ready, tap to update">Update ready <span>Tap to update ›</span></button>';
-  if(!day)return h+'</header>';
   var pct=day&&day.mins?Math.max(4,Math.min(100,Math.round(day.mins/240*100))):0;
   h+='<div class="fullbar" role="img" aria-label="'+(day?'Day '+pct+'% full':'')+'"><i style="width:'+pct+'%"></i></div>';
   return h+'</header>';
