@@ -171,10 +171,13 @@ svg{width:20px;height:20px;fill:none;stroke:currentColor;stroke-width:1.7;stroke
 
 /* ===== CHIPS + PILLS ===== */
 .chips{display:flex;flex-wrap:wrap;gap:8px}
-.filters{flex:none;flex-wrap:nowrap;gap:6px;overflow-x:auto;scrollbar-width:none;margin:0 calc(-1 * var(--gutter));padding:0 var(--gutter);
-  -webkit-mask-image:linear-gradient(90deg,transparent,#000 var(--gutter),#000 calc(100% - 28px),transparent);mask-image:linear-gradient(90deg,transparent,#000 var(--gutter),#000 calc(100% - 28px),transparent)}
+.filterbar{flex:none;display:flex;align-items:center;gap:6px;margin-right:calc(-1 * var(--gutter))}
+.filterbar .allchip{height:32px;padding:0 12px;font-size:13px;flex:none}
+.filters{flex:1;min-width:0;flex-wrap:nowrap;gap:6px;overflow-x:auto;scrollbar-width:none;padding-right:var(--gutter);
+  -webkit-mask-image:linear-gradient(90deg,transparent,#000 12px,#000 calc(100% - 28px),transparent);mask-image:linear-gradient(90deg,transparent,#000 12px,#000 calc(100% - 28px),transparent)}
 .filters::-webkit-scrollbar{display:none}
 .filters .chip{height:32px;padding:0 12px;font-size:13px;gap:6px;flex:none}
+.filters .chip[data-act="nfreview"]{width:38px;padding:0;justify-content:center}
 .filters .chip svg{width:13px;height:13px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
 .filters .chip.on svg{fill:currentColor}
 .filters .sep{width:1px;height:18px;background:var(--edge);align-self:center;flex:none;margin:0 2px}
@@ -520,8 +523,8 @@ function dayScreen(){
 function notesScreen(){
   var cats=state.cats.filter(live);
   var list=items().filter(function(r){return !isTask(r)&&(!nf.review||r.review_later)&&(!nf.cat||r.category===nf.cat)});
-  var chips='<div class="chips filters" role="toolbar" aria-label="Filter notes"><button class="chip'+(!nf.review&&!nf.cat?' on':'')+'" data-act="nfall" aria-pressed="'+(!nf.review&&!nf.cat)+'">All</button><button class="chip'+(nf.review?' on':'')+'" data-act="nfreview" aria-pressed="'+nf.review+'">'+ico('flag')+'Review</button><i class="sep" aria-hidden="true"></i>'+
-    cats.map(function(c){return '<button class="chip'+(nf.cat===c.name?' on':'')+'" data-act="nfcat" data-v="'+esc(c.name)+'" aria-pressed="'+(nf.cat===c.name)+'"><i class="dot" style="background:'+esc(c.colour)+'"></i>'+esc(c.name)+'</button>'}).join('')+'</div>';
+  var chips='<div class="filterbar" role="toolbar" aria-label="Filter notes"><button class="chip allchip'+(!nf.review&&!nf.cat?' on':'')+'" data-act="nfall" aria-pressed="'+(!nf.review&&!nf.cat)+'">All</button><div class="chips filters"><button class="chip'+(nf.review?' on':'')+'" data-act="nfreview" aria-pressed="'+nf.review+'" aria-label="Review later" title="Review later">'+ico('flag')+'</button><i class="sep" aria-hidden="true"></i>'+
+    cats.map(function(c){return '<button class="chip'+(nf.cat===c.name?' on':'')+'" data-act="nfcat" data-v="'+esc(c.name)+'" aria-pressed="'+(nf.cat===c.name)+'"><i class="dot" style="background:'+esc(c.colour)+'"></i>'+esc(c.name)+'</button>'}).join('')+'</div></div>';
   var out=[head('Notes'),chips];
   var pin=list.filter(pinned),rest=list.filter(function(r){return !pinned(r)});
   if(pin.length){out.push(label('Pinned','pin'));out.push(panel(pin.map(noteRow)))}
@@ -829,7 +832,18 @@ document.addEventListener('keydown',function(e){
   if(e.key==='Enter'&&sh&&e.target.id==='f-title'){e.preventDefault();saveSheet()}
 });
 
-$scroll.addEventListener('scroll',checkDown,{passive:true});window.addEventListener('resize',checkDown);
+$scroll.addEventListener('scroll',checkDown,{passive:true});
+/* filter row: mouse wheel + drag scroll sideways (touch already swipes) */
+$scroll.addEventListener('wheel',function(e){
+  var f=e.target.closest&&e.target.closest('.filters');if(!f||Math.abs(e.deltaX)>Math.abs(e.deltaY))return;
+  if(f.scrollWidth<=f.clientWidth)return;e.preventDefault();f.scrollLeft+=e.deltaY;
+},{passive:false});
+(function(){var f=null,x0=0,s0=0,moved=false;
+  $scroll.addEventListener('pointerdown',function(e){if(e.pointerType!=='mouse')return;f=e.target.closest&&e.target.closest('.filters');if(!f)return;x0=e.clientX;s0=f.scrollLeft;moved=false});
+  window.addEventListener('pointermove',function(e){if(!f)return;var dx=e.clientX-x0;if(Math.abs(dx)>4)moved=true;f.scrollLeft=s0-dx});
+  window.addEventListener('pointerup',function(){f=null});
+  document.addEventListener('click',function(e){if(moved&&e.target.closest&&e.target.closest('.filters')){e.stopPropagation();e.preventDefault();moved=false}},true);
+})();window.addEventListener('resize',checkDown);
 render();
 })();
 </script>
