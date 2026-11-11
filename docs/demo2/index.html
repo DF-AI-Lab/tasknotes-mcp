@@ -44,7 +44,9 @@ svg{width:20px;height:20px;fill:none;stroke:currentColor;stroke-width:1.7;stroke
 .scroll{flex:1;min-height:0;overflow-y:auto;overflow-x:hidden;padding:calc(20px + env(safe-area-inset-top)) var(--gutter) 120px;display:flex;flex-direction:column;gap:var(--gap)}
 
 /* ===== HEADER ===== */
-.head{display:flex;flex-direction:column;gap:14px}
+.head{display:flex;flex-direction:column;gap:14px;position:sticky;top:calc(-20px - env(safe-area-inset-top));z-index:5;background:var(--bg);
+  margin:calc(-20px - env(safe-area-inset-top)) calc(-1 * var(--gutter)) 0;padding:calc(20px + env(safe-area-inset-top)) var(--gutter) 12px}
+.head::after{content:"";position:absolute;left:0;right:0;top:100%;height:18px;background:linear-gradient(var(--bg),rgba(16,17,20,0));pointer-events:none}
 .fullbar{height:3px;border-radius:99px;background:var(--surface-2);overflow:hidden}
 .fullbar i{display:block;height:100%;border-radius:99px;background:var(--accent);transition:width .25s}
 .head-row{display:flex;align-items:center;gap:12px;min-height:46px}
@@ -149,7 +151,8 @@ svg{width:20px;height:20px;fill:none;stroke:currentColor;stroke-width:1.7;stroke
 .edge{position:absolute;left:50%;bottom:100%;width:390px;height:26px;margin-left:-195px;margin-bottom:-1px;overflow:visible;pointer-events:none;color:var(--glow);stroke-width:1}
 .edge .f{fill:var(--bg);stroke:none}
 .bar::before{content:"";position:absolute;left:0;right:0;bottom:100%;height:48px;background:linear-gradient(to bottom,rgba(16,17,20,0),var(--bg));pointer-events:none}
-.bar{position:relative;flex:none;border-top:1px solid rgba(255,255,255,.16);display:grid;grid-template-columns:1fr 1fr 64px 1fr 1fr;align-items:center;padding:8px 10px calc(14px + env(safe-area-inset-bottom));
+.bar::after{content:"";position:absolute;left:0;right:0;top:0;height:1px;background:rgba(255,255,255,.22);pointer-events:none}
+.bar{position:relative;flex:none;display:grid;grid-template-columns:1fr 1fr 64px 1fr 1fr;align-items:center;padding:8px 10px calc(14px + env(safe-area-inset-bottom));
   background:rgba(16,17,20,.92);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px)}
 .tab{height:44px;font-size:14px;font-weight:500;color:var(--muted);text-align:center;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:5px}
 .tab::after{content:"";width:5px;height:5px;border-radius:50%;background:transparent;transition:background .2s}
