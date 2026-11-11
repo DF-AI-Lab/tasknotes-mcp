@@ -152,9 +152,11 @@ svg{width:20px;height:20px;fill:none;stroke:currentColor;stroke-width:1.7;stroke
 .big .bmeta{margin-top:5px;font-size:13.5px;color:var(--muted);display:flex;align-items:center;gap:7px}
 .big .bmeta i{width:7px;height:7px;border-radius:50%;background:var(--c)}
 .big p{margin:14px 0 0;color:var(--muted);font-size:15px;line-height:1.5}
-.bigtick.noteglyph{background:color-mix(in srgb,var(--c) 10%,transparent)}.bigtick.noteglyph svg{width:22px;height:22px;stroke-width:1.8}
+.bigtick.noteglyph{background:color-mix(in srgb,var(--c) 10%,transparent)}.vval{font:600 17px/1.4 ui-monospace,Menlo,monospace;letter-spacing:.06em;margin-top:2px}
+.bigtick.noteglyph svg{width:22px;height:22px;stroke-width:1.8}
 .laterbtn.on{background:color-mix(in srgb,var(--c) 22%,transparent);color:var(--text);box-shadow:inset 0 0 0 1px color-mix(in srgb,var(--c) 50%,transparent)}
 .laterbtn.on svg{fill:currentColor}
+.laterbtn[data-act="vshow"] svg{fill:none}
 .big-foot{display:flex;align-items:center;justify-content:space-between;margin-top:12px;padding-top:10px;border-top:1px solid rgba(255,255,255,.07)}
 .laterbtn{height:40px;padding:0 16px 0 13px;border-radius:20px;background:rgba(255,255,255,.07);box-shadow:inset 0 0 0 1px rgba(255,255,255,.08);font-size:15px;font-weight:600;display:flex;align-items:center;gap:7px}
 .laterbtn svg{width:16px;height:16px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
@@ -278,6 +280,10 @@ textarea.field{font:400 15px/1.45 var(--font);min-height:96px}
   <symbol id="i-circle" viewBox="0 0 24 24"><circle cx="12" cy="12" r="8.5"/><path d="m8.5 12.3 2.4 2.4 4.6-5"/></symbol>
   <symbol id="i-flag" viewBox="0 0 24 24"><path d="M7 3.5h10v17l-5-3.8-5 3.8z"/></symbol>
   <symbol id="i-clock" viewBox="0 0 24 24"><circle cx="12" cy="12" r="8.5"/><path d="M12 7.5V12l3 2"/></symbol>
+  <symbol id="i-lock" viewBox="0 0 24 24"><rect x="5" y="10.5" width="14" height="10" rx="2.5"/><path d="M8.5 10.5V8a3.5 3.5 0 0 1 7 0v2.5M12 14.5v2.5"/></symbol>
+  <symbol id="i-file" viewBox="0 0 24 24"><path d="M7 3.5h7l4 4V20.5H7z"/><path d="M14 3.5v4h4"/></symbol>
+  <symbol id="i-eye" viewBox="0 0 24 24"><path d="M2.5 12S6 5.5 12 5.5 21.5 12 21.5 12 18 18.5 12 18.5 2.5 12 2.5 12z"/><circle cx="12" cy="12" r="3"/></symbol>
+  <symbol id="i-copy" viewBox="0 0 24 24"><rect x="8.5" y="8.5" width="11" height="11" rx="2"/><path d="M15.5 8.5V5.5a1 1 0 0 0-1-1h-9a1 1 0 0 0-1 1v9a1 1 0 0 0 1 1h3"/></symbol>
   <symbol id="i-x" viewBox="0 0 24 24"><path d="M6 6l12 12M18 6 6 18"/></symbol>
 </svg>
 
@@ -290,7 +296,7 @@ textarea.field{font:400 15px/1.45 var(--font);min-height:96px}
     <button class="tab" data-act="tab" data-v="notes">Notes</button>
     <button class="add" data-act="add" aria-label="Add"><svg><use href="#i-plus"/></svg></button>
     <button class="tab" data-act="tab" data-v="done">Done</button>
-    <button class="tab" data-act="tab" data-v="secrets">Secrets</button>
+    <button class="tab" data-act="tab" data-v="secrets">Vault</button>
   </nav>
 </main>
 
@@ -546,8 +552,36 @@ function doneScreen(){
   else if(list.length<=5)out.push('<p class="quiet">Nice work.</p>');
   return out.join('');
 }
+var vf='secrets',vaultOpen=null,vShow=false;
+var VAULT={secrets:[
+  {id:'v1',title:'Home wifi',meta:'Password',val:'BlueKettle-4471',cat:'Home'},
+  {id:'v2',title:'Bank app',meta:'PIN',val:'582913',cat:'Work'},
+  {id:'v3',title:'Gym locker',meta:'Code',val:'2207',cat:'Health'},
+  {id:'v4',title:'Car insurance',meta:'Policy number',val:'AV-88213-KX',cat:'Home'}],
+ docs:[
+  {id:'d1',title:'Passport scan',meta:'PDF, 1.2 MB',cat:'Home'},
+  {id:'d2',title:'Car insurance',meta:'PDF, 340 KB',cat:'Home'},
+  {id:'d3',title:'Tenancy agreement',meta:'PDF, 2.8 MB',cat:'Home'},
+  {id:'d4',title:'Payslip October',meta:'PDF, 96 KB',cat:'Work'}]};
+function vColour(c){var k=state.cats.filter(function(x){return x.name===c})[0];return k?k.colour:'#8a8f98'}
+function vaultRow(r){
+  var sec=vf==='secrets',g=sec?'lock':'file';
+  if(r.id===vaultOpen){
+    return '<div class="row big bignote" data-fid="'+r.id+'" style="--c:'+esc(vColour(r.cat))+'"><div class="big-in"><div class="big-top">'+
+      '<span class="bigtick noteglyph" aria-hidden="true">'+ico(g)+'</span>'+
+      '<button class="open" data-act="vfold" aria-expanded="true"><h2>'+esc(r.title)+'</h2><span class="bmeta"><i></i>'+esc(r.cat)+' · '+esc(r.meta)+'</span></button></div>'+
+      (sec?'<p class="vval">'+(vShow?esc(r.val):'••••••••')+'</p>':'')+
+      '<div class="big-foot">'+(sec?'<button class="laterbtn'+(vShow?' on':'')+'" data-act="vshow" aria-pressed="'+vShow+'">'+ico('eye')+(vShow?'Hide':'Show')+'</button>':'<button class="laterbtn" data-act="vdoc">'+ico('file')+'Open</button>')+
+      '<span class="acts">'+(sec?'<button class="more" data-act="vcopy" aria-label="Copy">'+ico('copy')+'</button>':'')+
+      '<button class="more" data-act="vdots" aria-label="Edit">'+ico('dots')+'</button></span></div></div></div>';
+  }
+  return '<div class="row note" data-fid="'+r.id+'"><span class="glyph">'+ico(g)+'</span><button class="open" data-act="vexpand" data-id="'+r.id+'" aria-expanded="false"><span class="main"><b>'+esc(r.title)+'</b>'+
+    '<span class="meta">'+esc(r.meta)+'</span></span></button><button class="more" data-act="vdots" aria-label="Edit">'+ico('dots')+'</button></div>';
+}
 function secretsScreen(){
-  return head('Secrets')+'<div class="panel"><p class="quiet">Secrets come back in the live version.</p></div>';
+  var bar='<div class="filterbar" role="tablist" aria-label="Vault"><div class="chips filters">'+
+    [['secrets','Secrets'],['docs','Documents']].map(function(t){return '<button class="chip'+(vf===t[0]?' on':'')+'" role="tab" data-act="vtab" data-v="'+t[0]+'" aria-selected="'+(vf===t[0])+'">'+t[1]+'</button>'}).join('')+'</div></div>';
+  return head('Vault')+bar+panel(VAULT[vf].map(vaultRow))+'<p class="quiet">Demo only. Locked with your PIN in the live app.</p>';
 }
 function checkDown(){
   var d=document.getElementById('down');if(!d)return;
@@ -785,6 +819,13 @@ document.addEventListener('click',function(e){
     case 'add':openSheet(null);break;
     case 'undo':var u=toastUndo;hideToast();if(u)u();break;
     case 'nfreview':nf.review=!nf.review;render();break;
+    case 'vtab':vf=v;vaultOpen=null;vShow=false;render();break;
+    case 'vexpand':flip(function(){vaultOpen=id;vShow=false;render()});break;
+    case 'vfold':flip(function(){vaultOpen=null;render()});break;
+    case 'vshow':vShow=!vShow;render();break;
+    case 'vcopy':toast('Copied');break;
+    case 'vdoc':toast('Opens the file in the live app');break;
+    case 'vdots':toast('Edit comes in the live app');break;
     case 'nfall':nf={review:false,cat:''};render();break;
     case 'nexpand':flip(function(){noteOpen=id;render()});break;
     case 'nfold':flip(function(){noteOpen=null;render()});break;
