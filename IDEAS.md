@@ -17,3 +17,8 @@
 - Move secrets to a new phone: a scrambled backup file (lock.js already has seal/adopt for this).
 - Folders inside Secrets if the list gets long.
 - Clear the clipboard 30 seconds after Copy.
+
+## 💡 Brain dump tab (Nov 2026)
+- Move **Done** into Settings and rename it **History**.
+- Replace the Done tab with **Ideas** (or "Brain dump").
+- Use it to dump ideas and improvements for my current apps, to work through later.
