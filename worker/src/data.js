@@ -2,12 +2,13 @@
 // A "snapshot" is the whole Sheet as plain objects: {tasks: [...], notes: [...], cats: [...]}.
 
 export const COLS = {
-  tasks: ['id', 'title', 'category', 'due', 'estimate_mins', 'done', 'done_at', 'created', 'updated', 'deleted_at', 'deleted_by', 'details', 'important'],
+  tasks: ['id', 'title', 'category', 'due', 'estimate_mins', 'done', 'done_at', 'created', 'updated', 'deleted_at', 'deleted_by', 'details', 'important', 'time'],   // time = HH:MM alarm on the due date
   notes: ['id', 'text', 'category', 'review_later', 'reviewed', 'created', 'updated', 'deleted_at', 'deleted_by', 'important'],
   cats: ['name', 'colour', 'emoji', 'updated', 'deleted_at', 'important'],
   secrets: ['id', 'data', 'created', 'updated', 'deleted_at', 'deleted_by'],   // 🔐 scrambled on the phone; no Claude tool reads this
+  devices: ['id', 'endpoint', 'p256dh', 'auth', 'key', 'name', 'created', 'updated', 'deleted_at', 'deleted_by'],   // ⏰ phones that get alarms
 };
-export const TABS = {tasks: 'Tasks', notes: 'Notes', cats: 'Categories', secrets: 'Secrets'};
+export const TABS = {tasks: 'Tasks', notes: 'Notes', cats: 'Categories', secrets: 'Secrets', devices: 'Devices'};
 const BOOLS = new Set(['done', 'review_later', 'reviewed']);
 const NUMS = new Set(['estimate_mins']);
 const COLOURS = ['#e0663a', '#2f6fdf', '#7a5af8', '#0f9d76', '#d6409f', '#c99a06', '#0ea5b7', '#64748b'];
@@ -25,7 +26,18 @@ function cell(col, v) {
   if (BOOLS.has(col)) return v === true || /^(true|yes|1|x|✓)$/i.test(String(v ?? '').trim());
   if (NUMS.has(col)) return Number(v) || 0;
   if (col === 'due') return normalDate(v);
+  if (col === 'time') return normalTime(v);
   return v == null ? '' : String(v);
+}
+// '9:05', '09:05:00', '9.05', '9:05 pm' -> '09:05' / '21:05'. Anything else -> ''
+export function normalTime(v) {
+  const m = String(v ?? '').trim().toLowerCase().match(/^(\d{1,2})(?:[:.](\d{2}))?(?::\d{2})?\s*(am|pm)?$/);
+  if (!m) return '';
+  let h = Number(m[1]); const mi = Number(m[2] || 0);
+  if (m[3] === 'pm' && h < 12) h += 12;
+  if (m[3] === 'am' && h === 12) h = 0;
+  if (!m[2] && !m[3]) return '';                                   // a bare number is not a time
+  return h > 23 || mi > 59 ? '' : String(h).padStart(2, '0') + ':' + String(mi).padStart(2, '0');
 }
 function normalDate(v) {
   const s = String(v ?? '').trim();
@@ -118,6 +130,35 @@ function when(due, today) {
 }
 const mins = m => { m = Number(m) || 0; if (!m) return ''; return m >= 60 ? Math.floor(m / 60) + 'h' + (m % 60 ? ' ' + (m % 60) + 'm' : '') : m + 'm'; };
 
+function parseTime(v) {
+  const s = String(v ?? '').trim();
+  if (!s || /^(none|no|off|clear)$/i.test(s)) return '';
+  const t = normalTime(s);
+  if (!t) throw new Error(`I could not read the time "${v}". Use HH:MM, like 09:30 or 18:00.`);
+  return t;
+}
+
+// ---------- ⏰ alarms ----------
+// how far `tz` is ahead of UTC at that moment, in ms
+function tzAhead(ms, tz) {
+  const p = Object.fromEntries(new Intl.DateTimeFormat('en-US', {timeZone: tz, hourCycle: 'h23', year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', second: '2-digit'})
+    .formatToParts(new Date(ms)).map(x => [x.type, x.value]));
+  return Date.UTC(+p.year, +p.month - 1, +p.day, +p.hour % 24, +p.minute, +p.second) - Math.floor(ms / 1000) * 1000;
+}
+// '2026-11-18' + '09:30' in UK time -> the exact moment (ms)
+export function alarmAt(due, time, tz) {
+  if (!due || !time) return NaN;
+  const guess = Date.parse(due + 'T' + time + ':00Z');
+  return guess - tzAhead(guess - tzAhead(guess, tz || 'Europe/London'), tz || 'Europe/London');
+}
+// open tasks whose alarm falls in (fromMs, toMs]
+export function dueAlarms(snap, fromMs, toMs, tz) {
+  return (snap.tasks || []).filter(t => live(t) && !t.done && t.due && t.time).filter(t => { const at = alarmAt(t.due, t.time, tz); return at > fromMs && at <= toMs; });
+}
+export function alarmMessage(t) {
+  return {title: '⏰ ' + t.title, body: [t.time, t.category, mins(t.estimate_mins)].filter(Boolean).join(' · ') + (t.details ? '\n' + String(t.details).slice(0, 120) : ''), tag: t.id, url: './'};
+}
+
 // ---------- the MCP tools ----------
 function findCat(snap, name) {
   const n = String(name || '').trim().toLowerCase();
@@ -143,7 +184,7 @@ const isImportant = (snap, r) => { const v = impVal(r.important); return v === '
 const setStar = (snap, r, want) => { r.important = want === catStarred(snap, r.category) ? '' : want ? 'yes' : 'no'; };
 const star = (snap, r) => isImportant(snap, r) ? '⭐ ' : '';
 const bool = (v) => v === true || /^(true|yes|1)$/i.test(String(v));
-const taskLine = (t, today, snap) => `- [${t.id}] ${t.done ? '✅ ' : ''}${star(snap, t)}${t.title} | ${t.category} | ${when(t.due, today)}${t.estimate_mins ? ' | ' + mins(t.estimate_mins) : ''}${t.details ? ' | 📝 ' + String(t.details).replace(/\s+/g, ' ').slice(0, 80) : ''}${t.deleted_at ? ' | (waiting for delete confirm)' : ''}`;
+const taskLine = (t, today, snap) => `- [${t.id}] ${t.done ? '✅ ' : ''}${star(snap, t)}${t.title} | ${t.category} | ${when(t.due, today)}${t.time ? ' ⏰ ' + t.time : ''}${t.estimate_mins ? ' | ' + mins(t.estimate_mins) : ''}${t.details ? ' | 📝 ' + String(t.details).replace(/\s+/g, ' ').slice(0, 80) : ''}${t.deleted_at ? ' | (waiting for delete confirm)' : ''}`;
 const noteLine = (n, snap) => `- [${n.id}] ${star(snap, n)}${n.review_later ? '🔖 ' : ''}${n.text.replace(/\s+/g, ' ')} | ${n.category}${n.deleted_at ? ' | (waiting for delete confirm)' : ''}`;
 const touch = r => { r.updated = nowIso(); return r; };
 
@@ -163,11 +204,13 @@ export const TOOLS = [
       title: str('What to do'), category: str('Category name (default: the first one)'),
       due: str('YYYY-MM-DD, today, tomorrow, a weekday, or empty for no date'),
       estimate_mins: {type: 'number', description: 'How many minutes it takes'}, details: str('Optional notes / more detail about the task'),
+      time: str('⏰ Alarm time HH:MM (24h, UK time). Darren\'s phone pings at this time on the due date (no due date = today)'),
       important: {type: 'boolean', description: '⭐ Mark it important'}}}},
   {name: 'edit_task', description: 'Change a task. Only the fields you pass change.',
     inputSchema: {type: 'object', required: ['id'], properties: {
       id: str('Task id, like t_abc123'), title: str('New title'), category: str('New category'),
       due: str('New due date (YYYY-MM-DD, today, tomorrow, weekday, or "none")'), estimate_mins: {type: 'number'}, details: str('New notes / details (empty string clears them)'),
+      time: str('⏰ New alarm time HH:MM (24h, UK time), or "none" to remove the alarm'),
       important: {type: 'boolean', description: 'true = ⭐ important, false = not important (works even inside a starred category)'}}}},
   {name: 'complete_task', description: 'Tick a task off (or set done=false to reopen it). Done tasks are hidden but kept.',
     inputSchema: {type: 'object', required: ['id'], properties: {id: str('Task id'), done: {type: 'boolean', description: 'Default true'}}}},
@@ -226,7 +269,8 @@ export function runTool(snap, name, a, tz) {
       const title = String(a.title || '').trim();
       if (!title) throw new Error('A task needs a title.');
       const t = {id: rid('t'), title, category: needCat(snap, a.category), due: parseDue(a.due, today), estimate_mins: Math.max(0, Math.round(Number(a.estimate_mins) || 0)),
-        done: false, done_at: '', created: nowIso(), updated: '', deleted_at: '', deleted_by: '', details: String(a.details || '').trim(), important: ''};
+        done: false, done_at: '', created: nowIso(), updated: '', deleted_at: '', deleted_by: '', details: String(a.details || '').trim(), important: '', time: parseTime(a.time)};
+      if (t.time && !t.due) t.due = today;
       if (a.important != null) setStar(snap, t, bool(a.important));
       snap.tasks.push(touch(t));
       return {text: 'Added:\n' + taskLine(t, today, snap), changed: true};
@@ -239,6 +283,7 @@ export function runTool(snap, name, a, tz) {
       if (a.due != null) t.due = parseDue(a.due, today);
       if (a.estimate_mins != null) t.estimate_mins = Math.max(0, Math.round(Number(a.estimate_mins) || 0));
       if (a.details != null) t.details = String(a.details).trim();
+      if (a.time != null) { t.time = parseTime(a.time); if (t.time && !t.due) t.due = today; }
       if (a.important != null) setStar(snap, t, bool(a.important));
       touch(t);
       return {text: 'Changed:\n' + taskLine(t, today, snap), changed: true};

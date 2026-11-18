@@ -166,6 +166,16 @@
 - **Not in yet:** file attachments and Documents (need Drive), task time-of-day.
 - **Backup:** the live app before this is commit `dffee80`.
 
+## ⏰ v2.2 / Worker 0.4.0: Categories view + alarms (18 Nov 2026)
+- Day screen: **Days | Categories** tabs. Categories = pick one, tasks grouped Late / Today / Tomorrow / This week / Later + its notes
+- Tasks have an **alarm time** (new `time` column, HH:MM). Set it in the task: Date pill → ⏰ Alarm. Shows ⏰ on the row, sorts by time
+- Settings → **Alarms** → Turn on for this phone → Send a test alarm. Phone saved in a new **Devices** tab
+- Worker checks **every minute** (cron) and sends a Web Push. Works with the app closed. Needs internet
+- Push key is worked out from TOKEN_SECRET (no new secret). Change TOKEN_SECRET = phones sign up again by themselves
+- Claude: add_task / edit_task take `time` (no date = today)
+- Only Darren's Sheet (the Worker's SHEET_ID) gets alarms, not friends' own Sheets
+- Needs: merge to main → Deploy Worker runs by itself
+
 ## Next step
 Change MCP_PIN to a strong one + redeploy.
 

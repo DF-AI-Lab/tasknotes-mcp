@@ -2,12 +2,15 @@
 //   /api/ping, /api/sync   the phone app (Bearer APP_KEY)
 //   /mcp                   Claude (MCP over Streamable HTTP, Bearer token from the PIN login)
 //   /authorize, /token, /register, /.well-known/*   the PIN login for Claude
-import {applyChanges, runTool, TOOLS} from './data.js';
+//   /push/key, /push/test  ⏰ alarms: the public push key, and a test alarm for a phone that is in the Devices tab
+//   scheduled (every minute)  sends the alarms that are due
+import {applyChanges, runTool, TOOLS, dueAlarms, alarmMessage, live} from './data.js';
+import {vapidKeys, sendPush} from './push.js';
 import {readAll, writeAll} from './google.js';
 import * as oauth from './oauth.js';
 import {same} from './oauth.js';
 
-export const VERSION = '0.3.0';
+export const VERSION = '0.4.0';
 const PROTOCOLS = ['2025-11-25', '2025-06-18', '2025-03-26', '2024-11-05'];
 
 const cors = (req, env) => {
@@ -49,6 +52,17 @@ export default {
         return json({error: 'Not found'}, 404, h);
       }
 
+      // ---------- ⏰ alarms ----------
+      if (path === '/push/key') return json({key: (await vapidKeys(env.TOKEN_SECRET)).publicKey}, 200, h);
+      if (path === '/push/test' && req.method === 'POST') {
+        const b = await req.json().catch(() => ({}));
+        const s = await readAll(env);
+        const dev = (s.devices || []).find(d => live(d) && d.endpoint && d.endpoint === b.endpoint);
+        if (!dev) return json({ok: false, error: 'This phone is not saved yet. Wait for it to sync, then try again.'}, 200, h);
+        const st = await sendPush(dev, {title: '⏰ Test alarm', body: 'Alarms are working on this phone.', tag: 'test', url: './'}, env.TOKEN_SECRET);
+        return json({ok: st >= 200 && st < 300, status: st, error: st >= 300 ? 'The phone\'s push service said ' + st : ''}, 200, h);
+      }
+
       // ---------- Claude's PIN login ----------
       if (path === '/.well-known/oauth-authorization-server' || path === '/.well-known/openid-configuration') return json(oauth.metadata(origin), 200, {'Access-Control-Allow-Origin': '*'});
       if (path.startsWith('/.well-known/oauth-protected-resource')) return json(oauth.resourceMeta(origin), 200, {'Access-Control-Allow-Origin': '*'});
@@ -78,7 +92,34 @@ export default {
       return json({error: e.message || 'Something went wrong'}, 500, h);
     }
   },
+
+  // every minute: send the alarms that fall in the minute that just ended
+  async scheduled(event, env, ctx) {
+    ctx.waitUntil(runAlarms(env, event.scheduledTime || Date.now()));
+  },
 };
+
+export async function runAlarms(env, nowMs, fetcher = fetch) {
+  const to = Math.floor(nowMs / 60000) * 60000 + 59999, from = to - 60000;   // this whole minute, once
+  const s = await readAll(env, fetcher);
+  const due = dueAlarms(s, from, to, env.TZ), devs = (s.devices || []).filter(d => live(d) && d.endpoint && d.p256dh && d.auth);
+  if (!due.length || !devs.length) return {sent: 0};
+  let sent = 0; const gone = new Set();
+  for (const t of due) for (const d of devs) {
+    if (gone.has(d.id)) continue;
+    try {
+      const st = await sendPush(d, alarmMessage(t), env.TOKEN_SECRET, fetcher);
+      if (st === 404 || st === 410) gone.add(d.id); else if (st < 300) sent++;
+    } catch (e) { /* one bad phone must not stop the others */ }
+  }
+  if (gone.size) await serial(async () => {                // that phone unsubscribed: mark it so we stop trying
+    const s2 = await readAll(env, fetcher);
+    const now = new Date().toISOString();
+    s2.devices.forEach(d => { if (gone.has(d.id) && live(d)) Object.assign(d, {deleted_at: now, deleted_by: 'worker', updated: now}); });
+    await writeAll(env, s2, fetcher);
+  });
+  return {sent, gone: gone.size};
+}
 
 // one JSON-RPC message from Claude
 export async function handle(m, env) {
@@ -90,7 +131,7 @@ export async function handle(m, env) {
       const want = m.params && m.params.protocolVersion;
       return ok({protocolVersion: PROTOCOLS.includes(want) ? want : PROTOCOLS[1], capabilities: {tools: {listChanged: false}},
         serverInfo: {name: 'tasknotes', title: 'TaskNotes', version: VERSION},
-        instructions: "Darren's TaskNotes: tasks (with category, due date, minutes estimate) and quick notes (some flagged 'review later'). " +
+        instructions: "Darren's TaskNotes: tasks (with category, due date, ⏰ alarm time, minutes estimate) and quick notes (some flagged 'review later'). " +
           'Use day_summary for "what is on today". Always use the [id] from a list when editing. Deletes only mark items; Darren confirms them in the app.'});
     }
     case 'ping': return ok({});

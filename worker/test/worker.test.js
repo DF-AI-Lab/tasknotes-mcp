@@ -62,7 +62,7 @@ test('phone: wrong key is refused, sync merges and writes', async () => {
   const r = await call('/api/sync', {method: 'POST', headers: {Authorization: 'Bearer app-key-123', 'Content-Type': 'application/json'}, body: JSON.stringify({changes: {tasks: [row]}})});
   const snap = await r.json();
   assert.equal(snap.tasks.length, 2);
-  assert.equal(sheet.Tasks[0].length, 13);                     // new columns added
+  assert.equal(sheet.Tasks[0].length, 14);                     // new columns added
   assert.equal(sheet.Tasks[2][1], 'From phone');
   // an older copy does not win
   applyChanges(snap, {tasks: [Object.assign({}, row, {title: 'old', updated: '2020-01-01'})]});
@@ -192,4 +192,12 @@ test('DF apps on GitHub Pages may connect (Luna Offline); other sites may not', 
   assert.equal(redirectOk('http://df-ai-lab.github.io/Luna_offline/'), false);
   assert.equal(redirectOk('https://df-ai-lab.github.io.evil.example/'), false);
   assert.equal(redirectOk('https://evil.github.io/'), false);
+});
+
+test('push key is public, test alarm needs a saved phone', async () => {
+  const k = await (await call('/push/key')).json();
+  assert.equal(k.key.length, 87);
+  const t = await (await call('/push/test', {method: 'POST', body: JSON.stringify({endpoint: 'https://push.example/nope'})})).json();
+  assert.equal(t.ok, false);
+  assert.match(t.error, /not saved yet/);
 });

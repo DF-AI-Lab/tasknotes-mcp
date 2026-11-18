@@ -14,12 +14,13 @@
 
   // same columns as the Worker (worker/src/data.js), so Claude can read the same Sheet later
   const COLS = {
-    tasks: ['id', 'title', 'category', 'due', 'estimate_mins', 'done', 'done_at', 'created', 'updated', 'deleted_at', 'deleted_by', 'details', 'important'],
+    tasks: ['id', 'title', 'category', 'due', 'estimate_mins', 'done', 'done_at', 'created', 'updated', 'deleted_at', 'deleted_by', 'details', 'important', 'time'],
     notes: ['id', 'text', 'category', 'review_later', 'reviewed', 'created', 'updated', 'deleted_at', 'deleted_by', 'important'],
     cats: ['name', 'colour', 'emoji', 'updated', 'deleted_at', 'important'],
     secrets: ['id', 'data', 'created', 'updated', 'deleted_at', 'deleted_by'],
+    devices: ['id', 'endpoint', 'p256dh', 'auth', 'key', 'name', 'created', 'updated', 'deleted_at', 'deleted_by'],
   };
-  const TABS = {tasks: 'Tasks', notes: 'Notes', cats: 'Categories', secrets: 'Secrets'};
+  const TABS = {tasks: 'Tasks', notes: 'Notes', cats: 'Categories', secrets: 'Secrets', devices: 'Devices'};
   const BOOLS = new Set(['done', 'review_later', 'reviewed']), NUMS = new Set(['estimate_mins']);
   const keyOf = (kind, r) => kind === 'cats' ? r.name : r.id;
 
@@ -28,6 +29,7 @@
     if (col === 'important') { const t = String(v == null ? '' : v).trim(); return v === true || /^(true|yes|1|✓)$/i.test(t) ? 'yes' : /^(no|off)$/i.test(t) ? 'no' : ''; }
     if (BOOLS.has(col)) return v === true || /^(true|yes|1|x|✓)$/i.test(String(v == null ? '' : v).trim());
     if (NUMS.has(col)) return Number(v) || 0;
+    if (col === 'time') { const m = String(v == null ? '' : v).trim().match(/^(\d{1,2})[:.](\d{2})/); return m && +m[1] < 24 && +m[2] < 60 ? m[1].padStart(2, '0') + ':' + m[2] : ''; }
     return v == null ? '' : String(v);
   }
   function fromValues(kind, values) {
@@ -133,7 +135,7 @@
     else {
       const made = await api(SHEETS, {method: 'POST', body: JSON.stringify({properties: {title: NAME},
         sheets: Object.values(TABS).map(title => ({properties: {title}}))})}, fetcher);
-      await writeAll(made.spreadsheetId, {tasks: [], notes: [], cats: [], secrets: []}, fetcher);
+      await writeAll(made.spreadsheetId, {tasks: [], notes: [], cats: [], secrets: [], devices: []}, fetcher);
       id = made.spreadsheetId; f = {parents: []};
     }
     if (home && !(f.parents || []).includes(home)) {

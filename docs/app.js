@@ -5,7 +5,7 @@
   'use strict';
   var S = window.Store, G = window.GSheet, $ = function (id) { return document.getElementById(id); };
   // bump these with every change: VERSION for the app, DEMO_VERSION for the demo
-  var VERSION = '2.0', DEMO_VERSION = '20';
+  var VERSION = '2.2', DEMO_VERSION = '21';
   var DEMO = new URLSearchParams(location.search).has('demo');
   var VER_LABEL = DEMO ? 'demo.v.' + DEMO_VERSION : 'v.' + VERSION;
   var SKEY = DEMO ? 'tn_demo_state_v1' : 'tn_state_v1';
@@ -49,7 +49,7 @@
   var soft = function (hex) { var h = String(hex || '').toLowerCase(); return SOFT[h] || (/^#[0-9a-f]{3,8}$/.test(h) ? 'color-mix(in srgb,' + h + ' 60%,#fff)' : '#8b8d94'); };
   var colOf = function (name) { var c = S.cat(st, name); return soft(c && c.colour); };
   function ordered(list) {
-    return list.slice().sort(function (a, b) { return (pinned(b) - pinned(a)) || String(a.created || '').localeCompare(String(b.created || '')); });
+    return list.slice().sort(function (a, b) { return (pinned(b) - pinned(a)) || (a.time ? 0 : 1) - (b.time ? 0 : 1) || String(a.time || '').localeCompare(String(b.time || '')) || String(a.created || '').localeCompare(String(b.created || '')); });
   }
   function weekDays() {
     var t = today(), mon = S.addDays(t, -((t.getDay() + 6) % 7)), out = [];
@@ -80,13 +80,14 @@
     var parts = [];
     if (r.category) parts.push(dotHtml(r.category) + esc(r.category));
     if (extra) parts.push(extra);
+    if (r.time && !r.done) parts.push('<span class="alarm">⏰ ' + esc(r.time) + '</span>');
     return '<span class="meta">' + parts.join(' · ') + '</span>';
   }
   var pinBtn = function (r) { return '<button class="pin' + (pinned(r) ? ' on' : '') + '" data-act="pin" data-id="' + esc(r.id) + '" aria-label="' + (pinned(r) ? 'Unpin' : 'Pin') + '" aria-pressed="' + pinned(r) + '">' + ico('pin') + '</button>'; };
   var curOpen = null, openPick;
   function bigRow(r) {
     var m = Number(r.estimate_mins) || 0;
-    var meta = [r.category ? '<i></i>' + esc(r.category) : '', m ? (m < 60 ? m + ' min' : fmtMins(m)) : ''].filter(Boolean).join('<span style="opacity:.6">·</span>');
+    var meta = [r.category ? '<i></i>' + esc(r.category) : '', r.time ? '⏰ ' + esc(r.time) : '', m ? (m < 60 ? m + ' min' : fmtMins(m)) : ''].filter(Boolean).join('<span style="opacity:.6">·</span>');
     return '<div class="row big" data-fid="r' + esc(r.id) + '" style="--c:' + esc(colOf(r.category)) + '"><div class="big-in"><div class="big-top">' +
       '<button class="bigtick" data-act="tick" data-id="' + esc(r.id) + '" aria-label="Done"><i class="ring"></i>' + ico('tick') + '</button>' +
       '<button class="open" data-act="fold" data-id="' + esc(r.id) + '" aria-expanded="true"><h2>' + esc(r.title) + '</h2>' + (meta ? '<span class="bmeta">' + meta + '</span>' : '') + '</button></div>' +
@@ -543,9 +544,9 @@
   function openSheet(id) {
     var r = id && findAny(id), k = id ? kindOf(id) : (screen === 'notes' ? 'notes' : 'tasks');
     var f;
-    if (r && k === 'tasks') f = {title: r.title, details: r.details || '', category: r.category, due: r.due || '', mins: Number(r.estimate_mins) || 0, star: pinned(r), review: false};
-    else if (r) f = {title: nTitle(r), details: nBody(r), category: r.category, due: '', mins: 0, star: pinned(r), review: !!r.review_later};
-    else f = {title: '', details: '', category: screen === 'notes' && nf.cat ? nf.cat : screen === 'day' && dv === 'cats' && pcat !== '-' ? pcat : '', due: k === 'tasks' ? (screen === 'day' && dv === 'cats' ? '' : picked) : '', mins: 0, star: false, review: screen === 'notes' && nf.review};
+    if (r && k === 'tasks') f = {title: r.title, details: r.details || '', category: r.category, due: r.due || '', time: r.time || '', mins: Number(r.estimate_mins) || 0, star: pinned(r), review: false};
+    else if (r) f = {title: nTitle(r), details: nBody(r), category: r.category, due: '', time: '', mins: 0, star: pinned(r), review: !!r.review_later};
+    else f = {title: '', details: '', category: screen === 'notes' && nf.cat ? nf.cat : screen === 'day' && dv === 'cats' && pcat !== '-' ? pcat : '', due: k === 'tasks' ? (screen === 'day' && dv === 'cats' ? '' : picked) : '', time: '', mins: 0, star: false, review: screen === 'notes' && nf.review};
     sh = {id: id || null, kind0: k, kind: k, open: null, f: f};
     renderSheet(); showSheet();
     if (!r) setTimeout(function () { var t = $('f-title'); if (t) t.focus(); }, 230);
@@ -555,7 +556,7 @@
     var f = sh.f, o = sh.open, task = isTaskSheet();
     var p = function (key, on, inner) { return '<button class="chip' + (on ? ' on' : '') + (o === key ? ' open' : '') + '" data-act="pill" data-v="' + key + '">' + inner + '</button>'; };
     return p('cat', !!f.category, f.category ? dotHtml(f.category) + esc(f.category) : 'Category') +
-      p('date', task && !!f.due, task && f.due ? esc(cap(dueLabel(f.due))) : 'Date') +
+      p('date', task && !!f.due, task && f.due ? esc(cap(dueLabel(f.due))) + (f.time ? ' · ⏰ ' + esc(f.time) : '') : 'Date') +
       p('time', task && !!f.mins, task && f.mins ? esc(fmtMins(f.mins)) : 'Time');
   }
   function drawerHtml() {
@@ -565,7 +566,9 @@
     if (o === 'date') {
       var ts = todayStr(), tm = S.ymd(S.addDays(today(), 1)), nw = S.ymd(S.addDays(today(), 7)), task = isTaskSheet();
       return '<div class="chips">' + c('setdate', ts, task && f.due === ts, 'Today') + c('setdate', tm, task && f.due === tm, 'Tomorrow') + c('setdate', nw, task && f.due === nw, 'Next week') +
-        '<input class="dt" type="date" id="f-date" value="' + esc(task ? f.due : '') + '" aria-label="Pick a date">' + c('setdate', '', task && !f.due, 'No date') + '</div>';
+        '<input class="dt" type="date" id="f-date" value="' + esc(task ? f.due : '') + '" aria-label="Pick a date">' + c('setdate', '', task && !f.due, 'No date') + '</div>' +
+        '<div class="chips alarmrow"><span class="alabel">⏰ Alarm</span><input class="dt" type="time" id="f-time" value="' + esc(task ? f.time : '') + '" aria-label="Alarm time">' +
+        (task && f.time ? c('settime', '', false, 'No alarm') : '') + '</div>' + (task && f.time && !alarmsOn() ? '<p class="ahint">Alarms are off on this phone. Turn them on in Settings.</p>' : '');
     }
     if (o === 'time') return '<div class="chips">' + [5, 10, 15, 20, 30, 45, 60, 90, 120].map(function (m) { return c('setmins', m, isTaskSheet() && f.mins === m, fmtMins(m)); }).join('') + c('setmins', 0, !f.mins, 'No time') + '</div>';
     return '';
@@ -616,7 +619,8 @@
     var id = sh.id, k = sh.kind, r;
     if (id && k !== sh.kind0) { S.remove(st, sh.kind0, id, 'you'); id = null; }      // a note became a task (or back): make the new one, drop the old
     if (k === 'tasks') {
-      var tf = {title: title, category: S.catOrFirst(st, f.category).name, due: f.due, estimate_mins: f.mins, details: f.details.trim()};
+      if (f.time && !f.due) f.due = todayStr();
+      var tf = {title: title, category: S.catOrFirst(st, f.category).name, due: f.due, time: f.due ? f.time : '', estimate_mins: f.mins, details: f.details.trim()};
       r = id ? S.edit(st, 'tasks', id, tf) : S.addTask(st, tf);
     } else {
       var text = title + (f.details.trim() ? '\n' + f.details.trim() : '');
@@ -628,7 +632,7 @@
     if (k === 'tasks' && screen === 'day' && r.due && weekDays().some(function (d) { return S.ymd(d) === r.due; })) picked = r.due;
     var isNew = !sh.id;
     save(); closeSheet(); render();
-    if (isNew) toast(k === 'tasks' ? 'Added to ' + r.category + (r.estimate_mins ? ' · ' + fmtMins(r.estimate_mins) : '') + ' · ' + dueLabel(r.due) : 'Note added to ' + r.category,
+    if (isNew) toast(k === 'tasks' ? 'Added to ' + r.category + (r.estimate_mins ? ' · ' + fmtMins(r.estimate_mins) : '') + ' · ' + dueLabel(r.due) + (r.time ? ' ⏰ ' + r.time : '') : 'Note added to ' + r.category,
       function () { S.remove(st, k, r.id, 'you'); save(); render(); });
   }
   function deleteSheet() {
@@ -636,6 +640,73 @@
     closeSheet();
     mutate(function () { S.remove(st, k, id, 'you'); });
     toast('Deleted: ' + String(titleOf(r)).slice(0, 28), function () { mutate(function () { S.undelete(st, k, id); }); });
+  }
+
+  /* ---------- ⏰ alarms (Web Push from the Worker) ---------- */
+  // The Worker checks every minute and pings each phone in the Sheet's Devices tab when a task's alarm time comes.
+  var WORKER = (window.TN_CONFIG || {}).workerUrl || '';
+  var pushOk = function () { return 'serviceWorker' in navigator && 'PushManager' in window && 'Notification' in window; };
+  var myDevice = function () { var id; try { id = localStorage.getItem('tn_device'); } catch (e) { return null; } return id && (st.devices || []).find(function (d) { return d.id === id && live(d); }); };
+  var alarmsOn = function () { return !DEMO && pushOk() && Notification.permission === 'granted' && !!myDevice(); };
+  function alarmText() {
+    if (!pushOk()) return 'Not available here. On iPhone, add TaskNotes to your Home Screen first';
+    if (Notification.permission === 'denied') return 'Blocked. Allow notifications for this site in your browser settings';
+    return alarmsOn() ? 'On for this phone' : 'Off · your phone pings at a task\'s alarm time';
+  }
+  var b64ToBytes = function (s) { s = s.replace(/-/g, '+').replace(/_/g, '/'); s += '==='.slice((s.length + 3) % 4); return Uint8Array.from(atob(s), function (c) { return c.charCodeAt(0); }); };
+  var bytesToB64 = function (b) { return btoa(String.fromCharCode.apply(null, new Uint8Array(b))).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, ''); };
+  async function workerKey() {
+    var r = await fetch(WORKER + '/push/key', {cache: 'no-store'});
+    if (!r.ok) throw new Error('The TaskNotes Worker did not answer (' + r.status + ')');
+    return (await r.json()).key;
+  }
+  // sign this phone up (or again, if the Worker's key changed) and save it in the Devices tab
+  async function subscribe(quiet) {
+    var key = await workerKey(), reg = await navigator.serviceWorker.ready, sub = await reg.pushManager.getSubscription();
+    var mine = myDevice();
+    if (sub && mine && mine.key === key && mine.endpoint === sub.endpoint) return false;          // all good already
+    if (sub && (!mine || mine.key !== key)) { await sub.unsubscribe(); sub = null; }
+    if (!sub) sub = await reg.pushManager.subscribe({userVisibleOnly: true, applicationServerKey: b64ToBytes(key)});
+    var ua = navigator.userAgent, name = (/Android/.test(ua) ? 'Android' : /iPhone|iPad/.test(ua) ? 'iPhone' : 'Computer') + ' · ' + new Date().toLocaleDateString('en-GB', {day: 'numeric', month: 'short'});
+    var row = S.saveDevice(st, {id: mine && mine.id, endpoint: sub.endpoint, p256dh: bytesToB64(sub.getKey('p256dh')), auth: bytesToB64(sub.getKey('auth')), key: key, name: name});
+    localStorage.setItem('tn_device', row.id);
+    save(true); await syncNow(quiet ? false : true);
+    return true;
+  }
+  async function turnOnAlarms() {
+    var m = $('amsg'), say = function (t) { if (m) m.textContent = t; };
+    if (!cloudOn()) { say('Turn on Google sync first. Alarms come from your Sheet.'); return; }
+    try {
+      say('Asking for permission…');
+      if (await Notification.requestPermission() !== 'granted') { say('Notifications were not allowed. Nothing changed.'); return; }
+      say('Signing this phone up…');
+      await subscribe(false);
+      alarmSheet(); toast('Alarms on for this phone');
+    } catch (e) { say('Could not turn alarms on: ' + (e.message || e)); }
+  }
+  async function testAlarm() {
+    var m = $('amsg'), say = function (t) { if (m) m.textContent = t; };
+    try {
+      say('Sending…');
+      var sub = await (await navigator.serviceWorker.ready).pushManager.getSubscription();
+      if (!sub) { say('This phone is not signed up. Tap Turn on again.'); return; }
+      var j = await (await fetch(WORKER + '/push/test', {method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({endpoint: sub.endpoint})})).json();
+      say(j.ok ? 'Sent. It should pop up in a few seconds.' : j.error || 'It did not send.');
+    } catch (e) { say('Could not reach the Worker: ' + (e.message || e)); }
+  }
+  function alarmSheet() {
+    var on = alarmsOn(), devs = (st.devices || []).filter(live);
+    paint('Alarms', shHead('Alarms', 'settings') +
+      '<p class="sp">Give a task an <b>alarm time</b> (tap Date in the task). Your phone pings at that time, even when TaskNotes is closed. Claude can set alarm times too.</p>' +
+      '<div class="panel">' + (devs.length ? devs.map(function (d) { return '<div class="row srow"><span class="main"><b>' + esc(d.name || 'A phone') + (myDevice() && myDevice().id === d.id ? ' (this one)' : '') + '</b><span class="meta">Gets alarms</span></span></div>'; }).join('') : '<div class="row srow"><span class="main"><b>No phones yet</b></span></div>') + '</div>' +
+      '<div class="btns">' + (on ? '<button class="btn" data-act="atest">Send a test alarm</button>' : '<button class="btn primary" data-act="aon"' + (pushOk() && Notification.permission !== 'denied' ? '' : ' disabled') + '>Turn on for this phone</button>') + '</div>' +
+      '<p class="sp" id="amsg" role="status">' + (on ? '' : esc(alarmText())) + '</p>' +
+      '<p class="foot">Needs internet to arrive. It is a notification with sound, not a ringing alarm clock.</p>');
+  }
+  // each start: if alarms are on, make sure the sign-up still matches the Worker's key
+  function checkAlarms() {
+    if (DEMO || !WORKER || !pushOk() || Notification.permission !== 'granted' || !myDevice() || !navigator.onLine) return;
+    subscribe(true).catch(function () { /* try next time */ });
   }
 
   /* ---------- small sheets ---------- */
@@ -660,6 +731,7 @@
       '<label class="frow"><span>Free time in your day</span><input id="s-day" type="number" min="1" max="16" inputmode="numeric" value="' + Math.round((Number(st.settings.dayMins) || 360) / 60) + '"><em>hours</em></label></div>' +
       '<div class="panel">' + srow('mcats', 'Categories', S.cats(st).length + ' categories · add, rename, colour') +
       (DEMO ? '' : srow('mgoogle', 'Google account', cloudText()) +
+        srow('malarm', 'Alarms', alarmText()) +
         srow('mfp', 'Fingerprint', fp ? 'On for this phone' : L.canFinger() ? 'Open with your finger' : 'Not available on this device') +
         srow('mpass', 'Passport', L.passportId() + ' · passcode, backup codes (' + L.codesLeft() + ' of 10 left)') +
         srow('mlock', 'Lock now', 'Asks for your passcode next time')) + '</div>' +
@@ -840,6 +912,10 @@
       case 'setcat': sh.f.category = v; sh.newcat = false; setOpen(null); break;
       case 'newcat': sh.newcat = true; refreshDrawer(); var ni = $('f-newcat'); if (ni) ni.focus(); break;
       case 'setdate': sh.f.due = v; if (v) sh.kind = 'tasks'; setOpen(null); break;
+      case 'settime': sh.f.time = ''; refreshDrawer(); break;
+      case 'malarm': alarmSheet(); break;
+      case 'aon': turnOnAlarms(); break;
+      case 'atest': testAlarm(); break;
       case 'setmins': sh.f.mins = Number(v) || 0; if (sh.f.mins) sh.kind = 'tasks'; setOpen(null); break;
       case 'needs': sh.kind = isTaskSheet() ? 'notes' : 'tasks'; if (sh.kind === 'tasks' && !sh.f.due && screen === 'day') sh.f.due = picked; refreshPills(); break;
       case 'spin': sh.f.star = !sh.f.star; refreshPills(); break;
@@ -884,6 +960,7 @@
       sh.f[t.getAttribute('data-f')] = t.value;
       if (t.id === 'f-title') { var b = $('save'); if (b) b.disabled = !t.value.trim(); }
     } else if (t.id === 'f-date') { sh.f.due = t.value; if (t.value) sh.kind = 'tasks'; refreshPills(); }
+    else if (t.id === 'f-time') { sh.f.time = t.value; if (t.value) { sh.kind = 'tasks'; if (!sh.f.due) { sh.f.due = todayStr(); var fd = $('f-date'); if (fd) fd.value = sh.f.due; } } refreshPills(); }
   });
   document.addEventListener('focusout', function (e) {
     if (sh && sh.newcat && e.target.id === 'f-newcat' && e.target.value.trim()) addCatFromSheet(e.target.value);
@@ -985,7 +1062,7 @@
   function onEnter() {
     $('app').hidden = false;
     render();
-    if (!started) { started = true; syncNow(); }
+    if (!started) { started = true; syncNow(); setTimeout(checkAlarms, 4000); }
   }
   window.LockUI.start({
     app: 'TaskNotes', prefix: 'tn', demo: DEMO,

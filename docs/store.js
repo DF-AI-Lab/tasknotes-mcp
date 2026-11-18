@@ -7,7 +7,7 @@
 (function (root) {
   'use strict';
   const DAY = 86400000, PURGE_DAYS = 7;
-  const KINDS = ['tasks', 'notes', 'cats', 'secrets'];
+  const KINDS = ['tasks', 'notes', 'cats', 'secrets', 'devices'];
   const COLOURS = ['#e0663a', '#2f6fdf', '#7a5af8', '#0f9d76', '#d6409f', '#c99a06', '#0ea5b7', '#64748b'];
 
   const nowIso = () => new Date().toISOString();
@@ -17,7 +17,7 @@
   const addDays = (d, n) => { const x = new Date(d); x.setDate(x.getDate() + n); return x; };
 
   function empty() {
-    return {v: 1, tasks: [], notes: [], cats: [], secrets: [], dirty: {}, lastSync: '', settings: {name: '', theme: 'ocean', dayMins: 360}};
+    return {v: 1, tasks: [], notes: [], cats: [], secrets: [], devices: [], dirty: {}, lastSync: '', settings: {name: '', theme: 'ocean', dayMins: 360}};
   }
   function starter() {
     const s = empty();
@@ -88,7 +88,7 @@
   function addTask(s, f) {
     const row = {id: rid('t'), title: String(f.title || '').trim(), category: catOrFirst(s, f.category).name,
       due: f.due || '', estimate_mins: Number(f.estimate_mins) || 0, done: false, done_at: '', created: nowIso(),
-      updated: '', deleted_at: '', deleted_by: '', details: String(f.details || '').trim(), important: ''};
+      updated: '', deleted_at: '', deleted_by: '', details: String(f.details || '').trim(), important: '', time: f.time || ''};
     s.tasks.unshift(row);
     return touch(s, 'tasks', row);
   }
@@ -153,6 +153,14 @@
     s.secrets.unshift(row);
     return touch(s, 'secrets', row);
   }
+  // ⏰ this phone's alarm sign-up (one row per phone, found by its push address)
+  function saveDevice(s, f) {
+    s.devices = s.devices || [];
+    let row = s.devices.find(d => d.endpoint === f.endpoint) || (f.id && find(s, 'devices', f.id));
+    if (!row) { row = {id: rid('d'), created: nowIso(), updated: '', deleted_at: '', deleted_by: ''}; s.devices.push(row); }
+    Object.assign(row, {endpoint: f.endpoint, p256dh: f.p256dh, auth: f.auth, key: f.key || '', name: f.name || '', deleted_at: '', deleted_by: ''});
+    return touch(s, 'devices', row);
+  }
   const confirmDelete = (s, kind, id) => { const r = find(s, kind, id); if (!r) return null; r.deleted_by = 'you'; return touch(s, kind, r); };
 
   function addCat(s, name, emoji, colour) {
@@ -201,7 +209,7 @@
   // ---------- sync ----------
   // what to send: every dirty row, as it is now
   function outbox(s) {
-    const out = {tasks: [], notes: [], cats: [], secrets: []};
+    const out = {tasks: [], notes: [], cats: [], secrets: [], devices: []};
     Object.keys(s.dirty).forEach(k => {
       const i = k.indexOf(':'), kind = k.slice(0, i), id = k.slice(i + 1);
       const row = kind === 'cats' ? s.cats.find(c => c.name === id) : find(s, kind, id);
@@ -260,7 +268,7 @@
 
   const Store = {DAY, PURGE_DAYS, COLOURS, BUCKETS, empty, starter, demo, ymd, addDays, bucket, dueLabel, fmtMins, parseQuick,
     live, pendingDelete, shown, cats, cat, catOrFirst, addTask, addNote, edit, tick, flag, star, isImportant, impVal, remove, undelete, confirmDelete,
-    addCat, editCat, removeCat, addSecret, KINDS, purge, outbox, outboxCount, merge, find};
+    addCat, editCat, removeCat, addSecret, saveDevice, KINDS, purge, outbox, outboxCount, merge, find};
   if (typeof module !== 'undefined' && module.exports) module.exports = Store;
   else root.Store = Store;
 })(typeof window !== 'undefined' ? window : globalThis);

@@ -21,3 +21,7 @@ APP_ORIGIN = "https://df-ai-lab.github.io"
 # [[kv_namespaces]]
 # binding = "LOCKS"
 # id = "paste-id-here"
+
+# ⏰ alarms: check every minute for tasks whose alarm time has come (free plan allows this)
+[triggers]
+crons = ["* * * * *"]

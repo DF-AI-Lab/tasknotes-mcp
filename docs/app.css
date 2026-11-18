@@ -377,3 +377,7 @@ html:not(.lockon) .lock{display:none}
 .gsteps .btn{display:grid;place-items:center;text-decoration:none;flex:none}
 #nlist,#vlist{display:flex;flex-direction:column;gap:var(--gap)}
 .viewtabs{margin-bottom:-10px}
+.alarm{color:var(--text);font-weight:500}
+.alarmrow{margin-top:10px;align-items:center}
+.alabel{font-size:14px;font-weight:600;color:var(--muted);margin-right:2px}
+.ahint{margin:8px 0 0;font-size:13px;color:var(--muted)}
