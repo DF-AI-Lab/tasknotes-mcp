@@ -1,6 +1,6 @@
 /* TaskNotes - the service worker: keeps the app files on the phone so it opens with no internet.
    Bump VERSION with every change. */
-const VERSION = '2.0';
+const VERSION = '2.1';
 const CACHE = 'tasknotes-' + VERSION;
 const FILES = ['./', 'index.html', 'app.css', 'app.js', 'manifest.json', 'passport/theme.json',
   'store.js', 'vault.js', 'config.js', 'passport-lock.js', 'passport/config.js', 'passport/google.js', 'passport/passport.js',

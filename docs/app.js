@@ -67,10 +67,10 @@
   }
 
   /* ---------- ui state ---------- */
-  var screen = 'day', picked = todayStr(), nf = {review: false, cat: ''}, sh = null, toastTimer = 0, toastUndo = null, upd = '', updNote = '';
-  try { var ui = JSON.parse(sessionStorage.getItem('tn_ui2') || '{}'); screen = ui.screen || screen; nf = ui.nf || nf; } catch (e) { /* none */ }
+  var screen = 'day', picked = todayStr(), dv = 'days', pcat = '', nf = {review: false, cat: ''}, sh = null, toastTimer = 0, toastUndo = null, upd = '', updNote = '';
+  try { var ui = JSON.parse(sessionStorage.getItem('tn_ui2') || '{}'); screen = ui.screen || screen; nf = ui.nf || nf; dv = ui.dv || dv; pcat = ui.pcat || pcat; } catch (e) { /* none */ }
   if (screen === 'secrets') screen = 'day';
-  var remember = function () { try { sessionStorage.setItem('tn_ui2', JSON.stringify({screen: screen, nf: nf})); } catch (e) { /* none */ } };
+  var remember = function () { try { sessionStorage.setItem('tn_ui2', JSON.stringify({screen: screen, nf: nf, dv: dv, pcat: pcat})); } catch (e) { /* none */ } };
   var $scroll = $('scroll'), $sheet = $('sheet'), $scrim = $('scrim'), $toast = $('toast'), $toastMsg = $('toast-msg');
 
   /* ---------- html bits ---------- */
@@ -157,7 +157,47 @@
         '<button class="mini" data-act="undel" data-id="' + esc(x[1].id) + '">Keep</button><button class="mini bad" data-act="okdel" data-id="' + esc(x[1].id) + '">Delete</button></div>';
     }));
   }
+  function viewTabs() {
+    return '<div class="filterbar viewtabs" role="tablist" aria-label="View">' + [['days', 'Days'], ['cats', 'Categories']].map(function (t) {
+      return '<button class="chip' + (dv === t[0] ? ' on' : '') + '" role="tab" data-act="dview" data-v="' + t[0] + '" aria-selected="' + (dv === t[0]) + '">' + t[1] + '</button>';
+    }).join('') + '</div>';
+  }
+  function catScreen() {
+    var ts = todayStr(), tm = S.ymd(S.addDays(today(), 1)), wk = S.ymd(S.addDays(today(), 7)), all = tasks(), cats = S.cats(st);
+    if (pcat && pcat !== '-' && !S.cat(st, pcat)) pcat = '';
+    if (!pcat) pcat = cats[0] ? cats[0].name : '-';
+    var inCat = function (r) { return pcat === '-' ? !r.category || !S.cat(st, r.category) : r.category === pcat; };
+    var open = function (r) { return !r.done && inCat(r); };
+    var mine = all.filter(inCat), left = mine.filter(function (r) { return !r.done; });
+    var c = S.cat(st, pcat);
+    var h = head(c ? c.name : 'No category', {month: 'Categories', done: mine.length - left.length, total: mine.length,
+      mins: left.reduce(function (a, r) { return a + (Number(r.estimate_mins) || 0); }, 0)});
+    var noCat = all.some(function (r) { return !r.done && (!r.category || !S.cat(st, r.category)); });
+    var strip = '<div class="filterbar" role="toolbar" aria-label="Pick a category"><div class="chips filters">' + cats.map(function (x) {
+      var n = all.filter(function (r) { return !r.done && r.category === x.name; }).length;
+      return '<button class="chip' + (pcat === x.name ? ' on' : '') + '" data-act="pcat" data-v="' + esc(x.name) + '" aria-pressed="' + (pcat === x.name) + '"><i class="dot" style="background:' + esc(soft(x.colour)) + '"></i>' + esc(x.name) + (n ? '<span class="cnt">' + n + '</span>' : '') + '</button>';
+    }).join('') + (noCat ? '<button class="chip' + (pcat === '-' ? ' on' : '') + '" data-act="pcat" data-v="-" aria-pressed="' + (pcat === '-') + '">No category</button>' : '') + '</div></div>';
+    var out = [h, viewTabs(), strip], pend = pendingHtml();
+    if (pend) out.push(pend);
+    var openable = function (id) { var r = id && S.find(st, 'tasks', id); return r && open(r) && live(r); };
+    curOpen = openPick && openable(openPick) ? openPick : null;
+    var groups = [['Late', function (r) { return r.due && r.due < ts; }], ['Today', function (r) { return dayKey(r) === ts; }],
+      ['Tomorrow', function (r) { return r.due === tm; }], ['This week', function (r) { return r.due > tm && r.due <= wk; }],
+      ['Later', function (r) { return r.due > wk; }]];
+    var byDue = function (a, b) { return (pinned(b) - pinned(a)) || dayKey(a).localeCompare(dayKey(b)) || String(a.created || '').localeCompare(String(b.created || '')); };
+    groups.forEach(function (g) {
+      var rows = left.filter(g[1]).sort(byDue);
+      if (!rows.length) return;
+      out.push(label(g[0]));
+      out.push(panel(rows.map(function (r) { return taskRow(r, g[0] === 'Today' ? '' : '<span class="' + (g[0] === 'Late' ? 'late' : '') + '">' + esc(cap(dueLabel(r.due))) + '</span>'); })));
+    });
+    if (!left.length) out.push('<p class="quiet">' + (mine.length ? 'All done here' : 'Nothing in this category') + '</p>');
+    var cn = notes().filter(function (n) { return pcat === '-' ? !n.category : n.category === pcat; });
+    if (cn.length) { out.push(label('Notes', 'note')); out.push(panel(ordered(cn).map(noteRow))); }
+    return out.join('');
+  }
   function dayScreen() {
+    if (dv === 'cats') return catScreen();
     var t = today(), ts = todayStr(), isToday = picked === ts, all = tasks();
     var dayTasks = all.filter(function (r) { return dayKey(r) === picked; });
     var left = dayTasks.filter(function (r) { return !r.done; });
@@ -171,7 +211,7 @@
       return '<button class="day' + (k === picked ? ' on' : '') + (any ? ' has' : '') + '" data-act="day" data-v="' + k + '"' + (k === ts ? ' aria-current="date"' : '') + ' aria-label="' + esc(d.toLocaleDateString('en-GB', {weekday: 'long', day: 'numeric', month: 'long'})) + '">' +
         letter + '<b>' + d.getDate() + '</b></button>';
     }).join('') + '<i class="dayhl" aria-hidden="true"></i></nav>';
-    var out = [h, strip], pend = pendingHtml();
+    var out = [h, viewTabs(), strip], pend = pendingHtml();
     if (pend) out.push(pend);
     var openable = function (id) { var r = id && S.find(st, 'tasks', id); return r && !r.done && live(r); };
     curOpen = openPick === null ? null : openable(openPick) ? openPick : (isToday && ordered(left)[0] ? ordered(left)[0].id : null);
@@ -505,7 +545,7 @@
     var f;
     if (r && k === 'tasks') f = {title: r.title, details: r.details || '', category: r.category, due: r.due || '', mins: Number(r.estimate_mins) || 0, star: pinned(r), review: false};
     else if (r) f = {title: nTitle(r), details: nBody(r), category: r.category, due: '', mins: 0, star: pinned(r), review: !!r.review_later};
-    else f = {title: '', details: '', category: screen === 'notes' && nf.cat ? nf.cat : '', due: k === 'tasks' ? picked : '', mins: 0, star: false, review: screen === 'notes' && nf.review};
+    else f = {title: '', details: '', category: screen === 'notes' && nf.cat ? nf.cat : screen === 'day' && dv === 'cats' && pcat !== '-' ? pcat : '', due: k === 'tasks' ? (screen === 'day' && dv === 'cats' ? '' : picked) : '', mins: 0, star: false, review: screen === 'notes' && nf.review};
     sh = {id: id || null, kind0: k, kind: k, open: null, f: f};
     renderSheet(); showSheet();
     if (!r) setTimeout(function () { var t = $('f-title'); if (t) t.focus(); }, 230);
@@ -750,6 +790,8 @@
     switch (act) {
       case 'tab': goTab(v); break;
       case 'day': changeDay(v); break;
+      case 'dview': if (dv !== v) { dv = v; openPick = undefined; $scroll.scrollTop = 0; render(); } break;
+      case 'pcat': if (pcat !== v) { pcat = v; openPick = undefined; $scroll.scrollTop = 0; render(); } break;
       case 'tick': tick(id); break;
       case 'later': later(id); break;
       case 'pin': togglePin(id); break;

@@ -376,3 +376,4 @@ html:not(.lockon) .lock{display:none}
 .gsteps ol{margin:0;padding-left:20px;color:var(--muted)}
 .gsteps .btn{display:grid;place-items:center;text-decoration:none;flex:none}
 #nlist,#vlist{display:flex;flex-direction:column;gap:var(--gap)}
+.viewtabs{margin-bottom:-10px}
